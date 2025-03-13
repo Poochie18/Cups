@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://db6b3j5qmeuqf"]
+[gd_scene load_steps=3 format=3 uid="uid://db6b3j5qmeuqf"]
 
 [ext_resource type="Script" uid="uid://cpl4r3ci1pheb" path="res://Scripts/MultiplayerMenu.cs" id="1_l6mum"]
+[ext_resource type="Script" uid="uid://caqr4hoknxxv5" path="res://Scripts/MultiplayerManager.cs" id="2_aq5bb"]
 
 [node name="Multiplayer" type="Control"]
 layout_mode = 3
@@ -23,21 +24,48 @@ grow_vertical = 2
 theme_override_constants/separation = 20
 alignment = 1
 
+[node name="Label" type="Label" parent="MultiplayerOptions"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Create Room"
+horizontal_alignment = 1
+
 [node name="CreateRoomButton" type="Button" parent="MultiplayerOptions"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 32
-text = "Create Room"
+text = "Create"
+
+[node name="RoomCodeLabel" type="Label" parent="MultiplayerOptions"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Room Code: (not created yet)"
+
+[node name="Label2" type="Label" parent="MultiplayerOptions"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Join Room"
+horizontal_alignment = 1
+
+[node name="RoomCodeInput" type="LineEdit" parent="MultiplayerOptions"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+placeholder_text = "Enter room code"
+alignment = 1
 
 [node name="JoinRoomButton" type="Button" parent="MultiplayerOptions"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "Join Room"
+text = "Join"
 
 [node name="BackButton" type="Button" parent="MultiplayerOptions"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Back"
+
+[node name="MultiplayerManager" type="Node2D" parent="."]
+position = Vector2(352, 347)
+script = ExtResource("2_aq5bb")
