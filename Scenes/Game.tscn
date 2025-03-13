@@ -1,0 +1,73 @@
+[gd_scene load_steps=3 format=3 uid="uid://cln3r8yclelc5"]
+
+[ext_resource type="Script" uid="uid://u56mdcvacndi" path="res://Scripts/Game.cs" id="1_acypc"]
+[ext_resource type="Script" uid="uid://4qau5nurl74w" path="res://Scripts/UI.cs" id="2_7gyo3"]
+
+[node name="Game" type="Node2D"]
+script = ExtResource("1_acypc")
+
+[node name="Grid" type="GridContainer" parent="."]
+offset_left = 60.0
+offset_top = 398.0
+offset_right = 660.0
+offset_bottom = 998.0
+columns = 3
+
+[node name="Player1Table" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 60.0
+offset_top = 1096.0
+offset_right = 666.0
+offset_bottom = 1203.0
+
+[node name="Player2Table" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 69.0
+offset_top = 227.0
+offset_right = 640.0
+offset_bottom = 331.0
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 720.0
+offset_bottom = 1280.0
+script = ExtResource("2_7gyo3")
+
+[node name="RestartButton" type="Button" parent="UI"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 1
+anchors_preset = -1
+offset_left = 40.0
+offset_top = 40.0
+offset_right = 135.0
+offset_bottom = 91.0
+text = "Restart"
+
+[node name="BackToMenuButton" type="Button" parent="UI"]
+custom_minimum_size = Vector2(100, 50)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -137.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = 90.0
+grow_horizontal = 0
+text = "Menu"
+
+[node name="StatusLabel" type="Label" parent="UI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -45.0
+offset_top = 40.0
+offset_right = 45.0
+offset_bottom = 23.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 32
+text = "Ход игрока"

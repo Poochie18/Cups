@@ -1,0 +1,83 @@
+[gd_scene load_steps=2 format=3 uid="uid://c11nd81r0mrio"]
+
+[ext_resource type="Script" uid="uid://5ipws1tkkns7" path="res://Scripts/Menu.cs" id="1_usfse"]
+
+[node name="Menu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_usfse")
+
+[node name="MainMenu" type="VBoxContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.3
+anchor_right = 0.8
+anchor_bottom = 0.7
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="PlayVsFriendButton" type="Button" parent="MainMenu"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 32
+text = "Play VS Friend"
+
+[node name="PlayVsBotButton" type="Button" parent="MainMenu"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Play VS Bot"
+
+[node name="ExitButton" type="Button" parent="MainMenu"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Exit"
+
+[node name="DifficultyMenu" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.3
+anchor_right = 0.8
+anchor_bottom = 0.7
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="EasyButton" type="Button" parent="DifficultyMenu"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 32
+text = "Easy
+"
+
+[node name="MediumButton" type="Button" parent="DifficultyMenu"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Medium
+"
+
+[node name="HardButton" type="Button" parent="DifficultyMenu"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Hard"
+
+[node name="BackButton" type="Button" parent="DifficultyMenu"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Back"
