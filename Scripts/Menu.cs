@@ -6,6 +6,7 @@ public partial class Menu : Control
     private Button playVsBotButton;
     private Button multiplayerButton;
     private VBoxContainer mainMenuContainer;
+    private int botDifficulty = 0; // Значение по умолчанию для сложности бота
 
     public override void _Ready()
     {
@@ -23,8 +24,9 @@ public partial class Menu : Control
             return;
         }
 
-        playVsFriendButton.Pressed += OnPlayVsFriendButtonPressed;
-        playVsBotButton.Pressed += OnPlayVsBotButtonPressed;
+        // Исправляем имена методов в привязке событий
+        playVsFriendButton.Pressed += OnFriendButtonPressed;
+        playVsBotButton.Pressed += OnBotButtonPressed;
         multiplayerButton.Pressed += OnMultiplayerButtonPressed;
 
         mainMenuContainer.Visible = true;
@@ -32,39 +34,24 @@ public partial class Menu : Control
         GD.Print("Menu initialized. Screen size: ", GetViewportRect().Size);
     }
 
-    private void OnPlayVsFriendButtonPressed()
+    private void OnFriendButtonPressed()
     {
-        GD.Print("Play vs Friend button pressed!");
-        StartGame("friend");
+        GD.Print("Friend button pressed!");
+        GetTree().ChangeSceneToFile("res://Scenes/SinglePlayerGame.tscn");
+        // Настройка режима происходит в сцене, GetNode здесь не сработает сразу после смены сцены
     }
 
-    private void OnPlayVsBotButtonPressed()
+    private void OnBotButtonPressed()
     {
-        GD.Print("Play vs Bot button pressed!");
-        LoadScene("res://Scenes/DifficultyMenu.tscn");
+        GD.Print("Bot button pressed!");
+        GetTree().ChangeSceneToFile("res://Scenes/SinglePlayerGame.tscn");
+        // Настройка режима происходит в сцене
     }
 
     private void OnMultiplayerButtonPressed()
     {
         GD.Print("Multiplayer button pressed!");
         LoadScene("res://Scenes/MultiplayerMenu.tscn");
-    }
-
-    private void StartGame(string mode, int difficulty = 0)
-    {
-        GD.Print($"Starting game with mode: {mode}, difficulty: {difficulty}");
-        PackedScene gameScene = GD.Load<PackedScene>("res://Scenes/Game.tscn");
-        if (gameScene != null)
-        {
-            Game gameInstance = gameScene.Instantiate<Game>();
-            gameInstance.SetGameMode(mode, difficulty);
-            GetTree().Root.AddChild(gameInstance);
-            QueueFree();
-        }
-        else
-        {
-            GD.PrintErr("Ошибка: Не удалось загрузить Game.tscn!");
-        }
     }
 
     private void LoadScene(string path)

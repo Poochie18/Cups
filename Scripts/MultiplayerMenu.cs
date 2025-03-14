@@ -8,29 +8,40 @@ public partial class MultiplayerMenu : Control
     private Button backButton;
     private Label roomCodeLabel;
     private MultiplayerManager multiplayerManager;
+    private VBoxContainer multiplayerOptions;
 
     public override void _Ready()
     {
+        multiplayerOptions = GetNode<VBoxContainer>("MultiplayerOptions");
         createRoomButton = GetNode<Button>("MultiplayerOptions/CreateRoomButton");
         roomCodeInput = GetNode<LineEdit>("MultiplayerOptions/RoomCodeInput");
         joinRoomButton = GetNode<Button>("MultiplayerOptions/JoinRoomButton");
         backButton = GetNode<Button>("MultiplayerOptions/BackButton");
         roomCodeLabel = GetNode<Label>("MultiplayerOptions/RoomCodeLabel");
-        multiplayerManager = GetNode<MultiplayerManager>("MultiplayerManager");
+        multiplayerManager = GetNode<MultiplayerManager>("/root/MultiplayerManager");
 
-        if (createRoomButton == null || roomCodeInput == null || joinRoomButton == null || 
-            backButton == null || roomCodeLabel == null || multiplayerManager == null)
+        if (multiplayerOptions == null || createRoomButton == null || roomCodeInput == null || 
+            joinRoomButton == null || backButton == null || roomCodeLabel == null || multiplayerManager == null)
         {
             GD.PrintErr("Ошибка: Не найдены узлы в MultiplayerMenu!");
-            GD.Print($"createRoom: {createRoomButton}, roomCode: {roomCodeInput}, joinRoom: {joinRoomButton}");
-            GD.Print($"back: {backButton}, roomCodeLabel: {roomCodeLabel}, multiplayerManager: {multiplayerManager}");
             return;
         }
+
+        roomCodeLabel.MaxLinesVisible = 1;
+        roomCodeLabel.ClipText = true;
+        roomCodeLabel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        roomCodeLabel.CustomMinimumSize = new Vector2(200, 0);
+
+        createRoomButton.SizeFlagsHorizontal = SizeFlags.Fill;
+        roomCodeInput.SizeFlagsHorizontal = SizeFlags.Fill;
+        joinRoomButton.SizeFlagsHorizontal = SizeFlags.Fill;
+        backButton.SizeFlagsHorizontal = SizeFlags.Fill;
 
         createRoomButton.Pressed += OnCreateRoomButtonPressed;
         joinRoomButton.Pressed += OnJoinRoomButtonPressed;
         backButton.Pressed += OnBackButtonPressed;
-        multiplayerManager.Connect("RoomCreated", Callable.From((string code) => OnRoomCreated(code))); // Исправлено
+        multiplayerManager.Connect("RoomCreated", Callable.From((string code) => OnRoomCreated(code)));
+        multiplayerManager.Connect("PlayerConnected", Callable.From(OnPlayerConnected));
 
         GD.Print("MultiplayerMenu initialized");
     }
@@ -43,12 +54,17 @@ public partial class MultiplayerMenu : Control
         {
             roomCodeLabel.Text = "Failed to create room!";
         }
+        else
+        {
+            roomCodeLabel.Text = $"Room Code: {code}";
+            GD.Print($"Ожидание подключения второго игрока...");
+        }
     }
 
     private void OnRoomCreated(string code)
     {
-        roomCodeLabel.Text = $"Room Code: {code}";
-        GD.Print($"Room code updated in UI: {code}");
+        GD.Print($"Room created: {code}");
+        roomCodeLabel.Text = $"Room Code: {code} (Waiting...)";
     }
 
     private void OnJoinRoomButtonPressed()
@@ -57,31 +73,25 @@ public partial class MultiplayerMenu : Control
         if (string.IsNullOrEmpty(roomCode))
         {
             GD.Print("Ошибка: Введите код комнаты!");
+            roomCodeLabel.Text = "Enter a room code!";
             return;
         }
         GD.Print($"Join Room button pressed! Room code: {roomCode}");
+        multiplayerManager.JoinRoom(roomCode);
+        roomCodeLabel.Text = "Connecting...";
+    }
+
+    private void OnPlayerConnected()
+    {
+        GD.Print("Игрок подключен, ожидаем перехода в игру");
+        QueueFree(); // Удаляем меню, ждем RPC StartGame
     }
 
     private void OnBackButtonPressed()
     {
         GD.Print("Back button pressed!");
-        LoadScene("res://Scenes/Menu.tscn");
-    }
-
-    private void LoadScene(string path)
-    {
-        GD.Print($"Attempting to load scene: {path}");
-        PackedScene scene = GD.Load<PackedScene>(path);
-        if (scene != null)
-        {
-            Node sceneInstance = scene.Instantiate();
-            GetTree().Root.AddChild(sceneInstance);
-            GD.Print($"Scene {path} loaded and added to tree");
-            QueueFree();
-        }
-        else
-        {
-            GD.PrintErr($"Ошибка: Не удалось загрузить сцену {path}!");
-        }
+        multiplayerManager.Cleanup();
+        GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
+        QueueFree();
     }
 }

@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://db6b3j5qmeuqf"]
+[gd_scene load_steps=2 format=3 uid="uid://db6b3j5qmeuqf"]
 
 [ext_resource type="Script" uid="uid://cpl4r3ci1pheb" path="res://Scripts/MultiplayerMenu.cs" id="1_l6mum"]
-[ext_resource type="Script" uid="uid://caqr4hoknxxv5" path="res://Scripts/MultiplayerManager.cs" id="2_aq5bb"]
 
 [node name="Multiplayer" type="Control"]
 layout_mode = 3
@@ -40,7 +39,8 @@ text = "Create"
 [node name="RoomCodeLabel" type="Label" parent="MultiplayerOptions"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
-text = "Room Code: (not created yet)"
+text = "Room Code: press Create"
+horizontal_alignment = 1
 
 [node name="Label2" type="Label" parent="MultiplayerOptions"]
 layout_mode = 2
@@ -65,7 +65,3 @@ custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Back"
-
-[node name="MultiplayerManager" type="Node2D" parent="."]
-position = Vector2(352, 347)
-script = ExtResource("2_aq5bb")
