@@ -4,96 +4,70 @@ public partial class Menu : Control
 {
     private Button playVsFriendButton;
     private Button playVsBotButton;
-    private Button easyButton;
-    private Button mediumButton;
-    private Button hardButton;
-    private Button backButton;
+    private Button multiplayerButton;
     private VBoxContainer mainMenuContainer;
-    private VBoxContainer difficultyMenu;
-    private bool showingDifficulty = false;
+    private int botDifficulty = 0; // Значение по умолчанию для сложности бота
 
     public override void _Ready()
     {
-        // Получаем контейнеры из сцены
         mainMenuContainer = GetNode<VBoxContainer>("MainMenu");
-        difficultyMenu = GetNode<VBoxContainer>("DifficultyMenu");
-
-        // Получаем кнопки из MainMenu
         playVsFriendButton = GetNode<Button>("MainMenu/PlayVsFriendButton");
         playVsBotButton = GetNode<Button>("MainMenu/PlayVsBotButton");
+        multiplayerButton = GetNode<Button>("MainMenu/MultiplayerButton");
 
-        // Получаем кнопки из DifficultyMenu
-        easyButton = GetNode<Button>("DifficultyMenu/EasyButton");
-        mediumButton = GetNode<Button>("DifficultyMenu/MediumButton");
-        hardButton = GetNode<Button>("DifficultyMenu/HardButton");
-        backButton = GetNode<Button>("DifficultyMenu/BackButton");
-
-        // Проверяем, что все узлы найдены
-        if (mainMenuContainer == null || difficultyMenu == null || 
-            playVsFriendButton == null || playVsBotButton == null ||
-            easyButton == null || mediumButton == null || hardButton == null || backButton == null)
+        if (mainMenuContainer == null || playVsFriendButton == null || 
+            playVsBotButton == null || multiplayerButton == null)
         {
             GD.PrintErr("Ошибка: Не найдены узлы меню!");
-            GD.Print($"mainMenu: {mainMenuContainer}, difficultyMenu: {difficultyMenu}");
-            GD.Print($"playVsFriend: {playVsFriendButton}, playVsBot: {playVsBotButton}");
-            GD.Print($"easy: {easyButton}, medium: {mediumButton}, hard: {hardButton}, back: {backButton}");
+            GD.Print($"mainMenu: {mainMenuContainer}");
+            GD.Print($"playVsFriend: {playVsFriendButton}, playVsBot: {playVsBotButton}, multiplayer: {multiplayerButton}");
             return;
         }
 
-        // Привязываем события к кнопкам
-        playVsFriendButton.Pressed += OnPlayVsFriendButtonPressed;
-        playVsBotButton.Pressed += OnPlayVsBotButtonPressed;
-        easyButton.Pressed += () => StartGame("bot", 0);
-        mediumButton.Pressed += () => StartGame("bot", 1);
-        hardButton.Pressed += () => StartGame("bot", 2);
-        backButton.Pressed += OnBackButtonPressed;
+        // Исправляем имена методов в привязке событий
+        playVsFriendButton.Pressed += OnFriendButtonPressed;
+        playVsBotButton.Pressed += OnBotButtonPressed;
+        multiplayerButton.Pressed += OnMultiplayerButtonPressed;
 
-        // Устанавливаем начальное состояние
         mainMenuContainer.Visible = true;
-        difficultyMenu.Visible = false;
-        showingDifficulty = false;
 
         GD.Print("Menu initialized. Screen size: ", GetViewportRect().Size);
     }
 
-    private void OnPlayVsFriendButtonPressed()
+    private void OnFriendButtonPressed()
     {
-        GD.Print("Play vs Friend button pressed!");
-        StartGame("friend");
+        GD.Print("Friend button pressed!");
+        GetTree().ChangeSceneToFile("res://Scenes/SinglePlayerGame.tscn");
+        // Настройка режима происходит в сцене, GetNode здесь не сработает сразу после смены сцены
     }
 
-    private void OnPlayVsBotButtonPressed()
+    private void OnBotButtonPressed()
     {
-        GD.Print("Play vs Bot button pressed!");
-        showingDifficulty = true;
-        mainMenuContainer.Visible = false;
-        difficultyMenu.Visible = true;
+        GD.Print("Bot button pressed!");
+        LoadScene("res://Scenes/DifficultyMenu.tscn");
+        // Настройка режима происходит в сцене
     }
 
-    private void OnBackButtonPressed()
+    private void OnMultiplayerButtonPressed()
     {
-        GD.Print("Back button pressed!");
-        showingDifficulty = false;
-        mainMenuContainer.Visible = true;
-        difficultyMenu.Visible = false;
+        GD.Print("Multiplayer button pressed!");
+        LoadScene("res://Scenes/MultiplayerMenu.tscn");
     }
 
-    private void StartGame(string mode, int difficulty = 0)
+    private void LoadScene(string path)
     {
-        mainMenuContainer.Visible = false;
-        difficultyMenu.Visible = false;
-
-        PackedScene gameScene = GD.Load<PackedScene>("res://Scenes/Game.tscn");
-        if (gameScene != null)
+        GD.Print($"Attempting to load scene: {path}");
+        PackedScene scene = GD.Load<PackedScene>(path);
+        if (scene != null)
         {
-            Game gameInstance = gameScene.Instantiate<Game>();
-            gameInstance.SetGameMode(mode, difficulty);
-            GetTree().Root.AddChild(gameInstance);
-            QueueFree();
+            Node sceneInstance = scene.Instantiate();
+            GetTree().Root.AddChild(sceneInstance);
+            GD.Print($"Scene {path} loaded and added to tree");
+            QueueFree(); // Удаляем текущую сцену
         }
         else
         {
-            GD.PrintErr("Ошибка: Не удалось загрузить Game.tscn!");
+            GD.PrintErr($"Ошибка: Не удалось загрузить сцену {path}!");
         }
     }
 }

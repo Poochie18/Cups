@@ -8,6 +8,8 @@ public partial class Game : Node2D
     private GridContainer grid;
     private Control player1Table;
     private Control player2Table;
+    private Label player1Label;  // Добавляем Label для Player1
+    private Label player2Label;
     private UI ui;
     private bool gameEnded = false;
     private TextureRect draggedCircle = null;
@@ -16,12 +18,9 @@ public partial class Game : Node2D
     private Dictionary<string, Node> initialParents = new Dictionary<string, Node>();
     private Button highlightedButton = null;
     private Button[] gridButtons;
-    private string gameMode = "friend";
+    public string gameMode = "multiplayer";
     private Button backToMenuButton;
-    private Button restartButton; // Добавляем поле для кнопки Restart
-    private bool isBotThinking = false;
-    private BotAI botAI;
-    private int botDifficulty = 0;
+    private Button restartButton;
 
     private static readonly int[,] WinningCombinations = new int[,]
     {
@@ -30,38 +29,22 @@ public partial class Game : Node2D
         {0, 4, 8}, {2, 4, 6}
     };
 
-    public void SetGameMode(string mode, int difficulty = 0)
-    {
-        gameMode = mode;
-        botDifficulty = difficulty;
-        if (mode == "bot" && player2Table != null && player1Table != null)
-        {
-            botAI = new BotAI(board, player2Table, player1Table, difficulty);
-        }
-        GD.Print($"Режим игры установлен: {gameMode}, Сложность бота: {difficulty}");
-    }
-
     public override void _Ready()
     {
+        GD.Print($"Game scene loaded on ID {Multiplayer.GetUniqueId()}");
         grid = GetNode<GridContainer>("Grid");
         player1Table = GetNode<Control>("Player1Table");
         player2Table = GetNode<Control>("Player2Table");
+        player1Label = GetNode<Label>("Player1Table/Player1Label"); // Получаем метку для Player1
+        player2Label = GetNode<Label>("Player2Table/Player2Label");
         ui = GetNode<UI>("UI");
         backToMenuButton = GetNode<Button>("UI/BackToMenuButton");
-        restartButton = GetNode<Button>("UI/RestartButton"); // Инициализируем поле
+        restartButton = GetNode<Button>("UI/RestartButton");
 
         if (grid == null || player1Table == null || player2Table == null || ui == null || backToMenuButton == null || restartButton == null)
         {
             GD.Print("Ошибка: Один из узлов не найден!");
-            GD.Print($"grid: {grid}, player1Table: {player1Table}, player2Table: {player2Table}, ui: {ui}, backToMenuButton: {backToMenuButton}, restartButton: {restartButton}");
             return;
-        }
-
-        if (gameMode == "bot")
-        {
-            botAI = new BotAI(board, player2Table, player1Table, botDifficulty);
-            if (player2Table == null || player1Table == null)
-                GD.PrintErr("Game._Ready: player2Table or player1Table is null!");
         }
 
         grid.Columns = 3;
@@ -87,14 +70,278 @@ public partial class Game : Node2D
         CreateCircles(player1Table, "P1");
         CreateCircles(player2Table, "P2");
 
-        ui.UpdateStatus("Ход игрока 1");
+        if (Multiplayer.MultiplayerPeer == null)
+        {
+            GD.PrintErr("MultiplayerPeer не установлен!");
+            return;
+        }
 
-        // Привязываем кнопки
+        // Подписываемся на сигнал отключения игрока
+        Multiplayer.PeerDisconnected += OnPeerDisconnected;
+
+        if (Multiplayer.IsServer())
+        {
+            currentPlayer = "Player1";
+            player1Label.Text = "Player 1 (You)"; // Сервер — Player 1
+            player2Label.Text = "Player 2 (Opponent)";
+            ui.UpdateStatus("Ход игрока 1 (Server)");
+            RpcId(0, nameof(SyncCurrentPlayer), currentPlayer);
+            RpcId(0, nameof(SyncPlayerLabels), "Player 1 (Opponent)", "Player 2 (You)");
+        }
+        else
+        {
+            currentPlayer = "Player2";
+            player1Label.Text = "Player 1 (Opponent)"; // Клиент — Player 2
+            player2Label.Text = "Player 2 (You)";
+            ui.UpdateStatus("Ожидание хода игрока 1 (Client)");
+            Vector2 tempPos = player1Table.Position;
+            player1Table.Position = player2Table.Position;
+            player2Table.Position = tempPos;
+        }
+        GD.Print($"Multiplayer mode: ID {Multiplayer.GetUniqueId()}, IsServer: {Multiplayer.IsServer()}");
+
         backToMenuButton.Pressed += ui.OnMenuButtonPressed;
         restartButton.Pressed += ui.OnRestartButtonPressed;
     }
 
-    // Остальной код остаётся без изменений
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncPlayerLabels(string p1Label, string p2Label)
+    {
+        player1Label.Text = p1Label;
+        player2Label.Text = p2Label;
+        GD.Print($"Labels synced: P1={p1Label}, P2={p2Label}");
+    }
+
+    // Обработка отключения игрока
+    private void OnPeerDisconnected(long id)
+    {
+        GD.Print($"Игрок с ID {id} отключился!");
+        gameEnded = true; // Останавливаем игру
+        ui.UpdateStatus("Соперник отключился. Игра окончена.");
+        RpcId(0, nameof(ShowDisconnectMessage)); // Уведомляем всех игроков
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void ShowDisconnectMessage()
+    {
+        gameEnded = true;
+        ui.UpdateStatus("Соперник отключился. Игра окончена.");
+        backToMenuButton.Disabled = false; // Активируем кнопку "Back to Menu"
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (gameEnded) return;
+
+        bool isServerTurn = Multiplayer.IsServer() && currentPlayer == "Player1";
+        bool isClientTurn = !Multiplayer.IsServer() && currentPlayer == "Player2";
+        if (!isServerTurn && !isClientTurn)
+            return;
+
+        if (@event is InputEventMouseButton mouseEvent && mouseEvent.ButtonIndex == MouseButton.Left)
+        {
+            if (mouseEvent.Pressed)
+                StartDragging(mouseEvent.Position);
+            else if (draggedCircle != null)
+            {
+                ClearHighlight();
+                DropCircle(mouseEvent.Position);
+                draggedCircle = null;
+                dragOffset = Vector2.Zero;
+            }
+        }
+        else if (@event is InputEventMouseMotion mouseMotion && draggedCircle != null)
+        {
+            draggedCircle.Position = mouseMotion.Position - dragOffset;
+            UpdateHighlight(mouseMotion.Position);
+        }
+    }
+
+    private void StartDragging(Vector2 mousePos)
+    {
+        Control table = Multiplayer.IsServer() ? player1Table : player2Table;
+        string prefix = Multiplayer.IsServer() ? "P1" : "P2";
+
+        foreach (Node child in table.GetChildren())
+        {
+            TextureRect circle = child as TextureRect;
+            if (circle != null && circle.Name.ToString().StartsWith(prefix) && 
+                new Rect2(circle.GlobalPosition, circle.Size).HasPoint(mousePos))
+            {
+                draggedCircle = circle;
+                dragOffset = mousePos - circle.GlobalPosition;
+                circle.GetParent().RemoveChild(circle);
+                AddChild(circle);
+                circle.Position = mousePos - dragOffset;
+                GD.Print($"Started dragging {circle.Name} from {circle.Position} by {currentPlayer}");
+                break;
+            }
+        }
+    }
+
+    private void DropCircle(Vector2 dropPosition)
+    {
+        Vector2 gridPos = grid.GlobalPosition;
+        Vector2 gridSize = grid.Size;
+        Vector2 cellSize = new Vector2(gridSize.X / 3, grid.Size.Y / 3);
+
+        if (new Rect2(gridPos, gridSize).HasPoint(dropPosition))
+        {
+            Vector2 circleCenter = dropPosition - dragOffset + (draggedCircle.Size / 2);
+            int row = (int)((circleCenter.Y - gridPos.Y) / cellSize.Y);
+            int col = (int)((circleCenter.X - gridPos.X) / cellSize.X);
+
+            if (row >= 0 && row < 3 && col >= 0 && col < 3)
+            {
+                string existingCircleName = board[row, col];
+                int draggedSize = GetCircleSize(draggedCircle.Name);
+
+                if (existingCircleName == "" || CanOverride(existingCircleName, draggedSize))
+                {
+                    if (existingCircleName != "")
+                    {
+                        TextureRect existingCircle = FindCircleByName(existingCircleName);
+                        if (existingCircle != null)
+                        {
+                            existingCircle.GetParent().RemoveChild(existingCircle);
+                            existingCircle.QueueFree();
+                            GD.Print($"Removed {existingCircleName} from ({row}, {col})");
+                        }
+                    }
+
+                    board[row, col] = draggedCircle.Name;
+                    draggedCircle.Position = gridPos + new Vector2(col * cellSize.X, row * cellSize.Y) +
+                        (cellSize - draggedCircle.Size) / 2;
+                    GD.Print($"{currentPlayer} placed {draggedCircle.Name} at ({row}, {col})");
+
+                    GD.Print("Calling RpcId for SyncMove");
+                    RpcId(0, nameof(SyncMove), draggedCircle.Name, row, col, draggedCircle.Modulate, draggedCircle.Size);
+                    GD.Print("Calling RpcId for SyncRemoveFromTable");
+                    RpcId(0, nameof(SyncRemoveFromTable), draggedCircle.Name, Multiplayer.IsServer());
+                    string newPlayer = currentPlayer == "Player1" ? "Player2" : "Player1";
+                    currentPlayer = newPlayer;
+                    GD.Print("Calling RpcId for SyncCurrentPlayer");
+                    RpcId(0, nameof(SyncCurrentPlayer), newPlayer);
+
+                    CheckForWinOrDraw(); // Проверяем после каждого хода
+                }
+                else
+                {
+                    ResetCirclePosition(draggedCircle);
+                    GD.Print($"Cannot place {draggedCircle.Name} over {existingCircleName} at ({row}, {col})");
+                }
+            }
+            else
+            {
+                ResetCirclePosition(draggedCircle);
+            }
+        }
+        else
+        {
+            ResetCirclePosition(draggedCircle);
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncMove(string circleName, int row, int col, Color color, Vector2 size)
+    {
+        if (gameEnded) return;
+
+        GD.Print($"SyncMove called by {Multiplayer.GetUniqueId()}: {circleName} to ({row}, {col})");
+
+        TextureRect circle = FindCircleByName(circleName);
+        if (circle == null)
+        {
+            circle = new TextureRect
+            {
+                Name = circleName,
+                Texture = GD.Load<Texture2D>("res://Sprites/icon.svg") ?? GD.Load<Texture2D>("res://icon.png"),
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                Size = size,
+                Modulate = color,
+                MouseFilter = Control.MouseFilterEnum.Stop
+            };
+            AddChild(circle);
+            GD.Print($"Created new circle {circleName} for sync");
+        }
+
+        string existingCircleName = board[row, col];
+        if (existingCircleName != "" && existingCircleName != circleName)
+        {
+            TextureRect existingCircle = FindCircleByName(existingCircleName);
+            if (existingCircle != null)
+            {
+                existingCircle.GetParent().RemoveChild(existingCircle);
+                existingCircle.QueueFree();
+                GD.Print($"Synced removal of {existingCircleName} from ({row}, {col})");
+            }
+        }
+
+        Vector2 gridPos = grid.GlobalPosition;
+        Vector2 cellSize = new Vector2(grid.Size.X / 3, grid.Size.Y / 3);
+        circle.GetParent().RemoveChild(circle);
+        AddChild(circle);
+        circle.Position = gridPos + new Vector2(col * cellSize.X, row * cellSize.Y) + (cellSize - circle.Size) / 2;
+        board[row, col] = circleName;
+
+        CheckForWinOrDraw();
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncRemoveFromTable(string circleName, bool isServer)
+    {
+        GD.Print($"SyncRemoveFromTable called by {Multiplayer.GetUniqueId()}: {circleName}, IsServer: {isServer}");
+        Control table = isServer ? player1Table : player2Table;
+        TextureRect circle = table.GetNodeOrNull<TextureRect>(circleName);
+        if (circle != null)
+        {
+            circle.GetParent().RemoveChild(circle);
+            circle.QueueFree();
+            GD.Print($"Removed {circleName} from {(isServer ? "Player1Table" : "Player2Table")}");
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncCurrentPlayer(string newPlayer)
+    {
+        currentPlayer = newPlayer;
+        GD.Print($"Current player synced to {currentPlayer} by {Multiplayer.GetUniqueId()}");
+        ui.UpdateStatus($"Ход игрока {(currentPlayer == "Player1" ? "1" : "2")}");
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    public void SyncResetGame()
+    {
+        GD.Print($"SyncResetGame called by {Multiplayer.GetUniqueId()}");
+        ResetGame();
+    }
+
+    public void ResetGame()
+    {
+        GD.Print("Resetting game...");
+        gameEnded = false;
+        draggedCircle = null;
+        currentPlayer = "Player1";
+
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                board[i, j] = "";
+
+        ClearCirclesFrom(player1Table.GetChildren());
+        ClearCirclesFrom(player2Table.GetChildren());
+        ClearCirclesFrom(GetChildren());
+
+        CreateCircles(player1Table, "P1");
+        CreateCircles(player2Table, "P2");
+
+        if (Multiplayer.IsServer())
+        {
+            RpcId(0, nameof(SyncCurrentPlayer), currentPlayer);
+        }
+
+        ui.UpdateStatus($"Ход игрока {(currentPlayer == "Player1" ? "1" : "2")}");
+    }
+
     private void CreateCircles(Control table, string playerPrefix)
     {
         Texture2D texture = GD.Load<Texture2D>("res://Sprites/icon.svg") ?? GD.Load<Texture2D>("res://icon.png");
@@ -130,53 +377,11 @@ public partial class Game : Node2D
         }
     }
 
-    public override void _Input(InputEvent @event)
-    {
-        if (gameEnded || isBotThinking) return;
-
-        if (@event is InputEventMouseButton mouseEvent && mouseEvent.ButtonIndex == MouseButton.Left)
-        {
-            if (mouseEvent.Pressed)
-                StartDragging(mouseEvent.Position);
-            else if (draggedCircle != null)
-            {
-                ClearHighlight();
-                DropCircle(mouseEvent.Position);
-                draggedCircle = null;
-                dragOffset = Vector2.Zero;
-            }
-        }
-        else if (@event is InputEventMouseMotion mouseMotion && draggedCircle != null)
-        {
-            draggedCircle.Position = mouseMotion.Position - dragOffset;
-            UpdateHighlight(mouseMotion.Position);
-        }
-    }
-
-    private void StartDragging(Vector2 mousePos)
-    {
-        Control table = currentPlayer == "Player1" ? player1Table : player2Table;
-        foreach (Node child in table.GetChildren())
-        {
-            TextureRect circle = child as TextureRect;
-            if (circle != null && new Rect2(circle.GlobalPosition, circle.Size).HasPoint(mousePos))
-            {
-                draggedCircle = circle;
-                dragOffset = mousePos - circle.GlobalPosition;
-                circle.GetParent().RemoveChild(circle);
-                AddChild(circle);
-                circle.Position = mousePos - dragOffset;
-                GD.Print($"Started dragging {circle.Name} from {circle.Position} by {currentPlayer}");
-                break;
-            }
-        }
-    }
-
     private void UpdateHighlight(Vector2 mousePosition)
     {
         Vector2 gridPos = grid.GlobalPosition;
         Vector2 gridSize = grid.Size;
-        Vector2 cellSize = new Vector2(gridSize.X / 3, gridSize.Y / 3);
+        Vector2 cellSize = new Vector2(gridSize.X / 3, grid.Size.Y / 3);
 
         if (new Rect2(gridPos, gridSize).HasPoint(mousePosition))
         {
@@ -216,115 +421,6 @@ public partial class Game : Node2D
         }
     }
 
-    private void DropCircle(Vector2 dropPosition)
-    {
-        Vector2 gridPos = grid.GlobalPosition;
-        Vector2 gridSize = grid.Size;
-        Vector2 cellSize = new Vector2(gridSize.X / 3, gridSize.Y / 3);
-
-        if (new Rect2(gridPos, gridSize).HasPoint(dropPosition))
-        {
-            Vector2 circleCenter = dropPosition - dragOffset + (draggedCircle.Size / 2);
-            int row = (int)((circleCenter.Y - gridPos.Y) / cellSize.Y);
-            int col = (int)((circleCenter.X - gridPos.X) / cellSize.X);
-
-            if (row >= 0 && row < 3 && col >= 0 && col < 3)
-            {
-                string existingCircleName = board[row, col];
-                int draggedSize = GetCircleSize(draggedCircle.Name);
-
-                if (existingCircleName == "" || CanOverride(existingCircleName, draggedSize))
-                {
-                    if (existingCircleName != "")
-                    {
-                        TextureRect existingCircle = FindCircleByName(existingCircleName);
-                        if (existingCircle != null)
-                        {
-                            existingCircle.GetParent().RemoveChild(existingCircle);
-                            existingCircle.QueueFree();
-                            GD.Print($"Removed {existingCircleName} from ({row}, {col})");
-                        }
-                    }
-
-                    board[row, col] = draggedCircle.Name;
-                    draggedCircle.Position = gridPos + new Vector2(col * cellSize.X, row * cellSize.Y) +
-                        (cellSize - draggedCircle.Size) / 2;
-                    GD.Print($"{currentPlayer} placed {draggedCircle.Name} at ({row}, {col})");
-
-                    CheckForWinOrDraw();
-                    if (!gameEnded)
-                    {
-                        if (gameMode == "bot" && currentPlayer == "Player1")
-                        {
-                            currentPlayer = "Player2";
-                            ui.UpdateStatus("Ход бота");
-                            isBotThinking = true;
-                            StartBotMoveWithDelay();
-                        }
-                        else
-                        {
-                            currentPlayer = currentPlayer == "Player1" ? "Player2" : "Player1";
-                            ui.UpdateStatus($"Ход игрока {(currentPlayer == "Player1" ? "1" : "2")}");
-                        }
-                    }
-                }
-                else
-                {
-                    ResetCirclePosition(draggedCircle);
-                    GD.Print($"Cannot place {draggedCircle.Name} over {existingCircleName} at ({row}, {col})");
-                }
-            }
-            else
-            {
-                ResetCirclePosition(draggedCircle);
-            }
-        }
-        else
-        {
-            ResetCirclePosition(draggedCircle);
-        }
-    }
-
-    private async void StartBotMoveWithDelay()
-    {
-        GD.Print("Бот думает...");
-        await ToSignal(GetTree().CreateTimer(1.0f), "timeout");
-        BotMove();
-        draggedCircle = null;
-        dragOffset = Vector2.Zero;
-        isBotThinking = false;
-        if (!gameEnded)
-        {
-            currentPlayer = "Player1";
-            ui.UpdateStatus("Ход игрока 1");
-        }
-    }
-
-    private void BotMove()
-    {
-        var move = botAI?.GetMove();
-        if (move.HasValue)
-        {
-            (TextureRect botCircle, Vector2I targetCell) = move.Value;
-            draggedCircle = botCircle;
-            dragOffset = botCircle.Size / 2;
-            botCircle.GetParent().RemoveChild(botCircle);
-            AddChild(botCircle);
-
-            Vector2 gridPos = grid.GlobalPosition;
-            Vector2 cellSize = new Vector2(grid.Size.X / 3, grid.Size.Y / 3);
-            Vector2 dropPos = gridPos + new Vector2(targetCell.Y * cellSize.X, targetCell.X * cellSize.Y) + cellSize / 2;
-            DropCircle(dropPos);
-            GD.Print($"Бот выбрал {botCircle.Name} для ячейки ({targetCell.X}, {targetCell.Y})");
-        }
-        else
-        {
-            GD.Print("Бот не может сделать ход, переход хода к игроку 1");
-            currentPlayer = "Player1";
-            ui.UpdateStatus("Ход игрока 1");
-        }
-    }
-
     private void CheckForWinOrDraw()
     {
         string winner = CheckForWin();
@@ -333,6 +429,7 @@ public partial class Game : Node2D
             gameEnded = true;
             ui.UpdateStatus($"Победил игрок {(winner == "Player1" ? "1" : "2")}");
             GD.Print($"{winner} wins!");
+            RpcId(0, nameof(SyncGameEnd), $"Победил игрок {(winner == "Player1" ? "1" : "2")}");
             return;
         }
 
@@ -341,9 +438,17 @@ public partial class Game : Node2D
             gameEnded = true;
             ui.UpdateStatus("Ничья!");
             GD.Print("Game ended in a draw!");
+            RpcId(0, nameof(SyncGameEnd), "Ничья!");
         }
     }
 
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncGameEnd(string message)
+    {
+        gameEnded = true;
+        ui.UpdateStatus(message);
+        backToMenuButton.Disabled = false; // Активируем кнопку "Back to Menu"
+    }
     private string CheckForWin()
     {
         for (int i = 0; i < WinningCombinations.GetLength(0); i++)
@@ -410,32 +515,6 @@ public partial class Game : Node2D
         {
             GD.Print($"Ошибка: Исходная позиция или родитель для {circle.Name} не найдены!");
         }
-    }
-
-    public void ResetGame()
-    {
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                board[i, j] = "";
-
-        ClearCirclesFrom(GetChildren());
-        ClearCirclesFrom(player1Table.GetChildren());
-        ClearCirclesFrom(player2Table.GetChildren());
-
-        initialPositions.Clear();
-        initialParents.Clear();
-
-        CreateCircles(player1Table, "P1");
-        CreateCircles(player2Table, "P2");
-
-        currentPlayer = "Player1";
-        gameEnded = false;
-        isBotThinking = false;
-        draggedCircle = null;
-        dragOffset = Vector2.Zero;
-        ui.UpdateStatus("Ход игрока 1");
-
-        GD.Print("Game reset with all circles recreated!");
     }
 
     private void ClearCirclesFrom(Godot.Collections.Array<Godot.Node> children)

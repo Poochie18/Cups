@@ -4,13 +4,13 @@ public partial class UI : Control
 {
     private Label statusLabel;
     private Button menuButton;
-    private Button restartButton; // Добавляем кнопку Restart
+    private Button restartButton;
 
     public override void _Ready()
     {
         statusLabel = GetNode<Label>("StatusLabel");
         menuButton = GetNode<Button>("BackToMenuButton");
-        restartButton = GetNode<Button>("RestartButton"); // Путь к кнопке
+        restartButton = GetNode<Button>("RestartButton");
 
         if (statusLabel == null || menuButton == null || restartButton == null)
         {
@@ -18,10 +18,6 @@ public partial class UI : Control
             GD.Print($"statusLabel: {statusLabel}, menuButton: {menuButton}, restartButton: {restartButton}");
             return;
         }
-
-        // Привязка кнопок будет в Game.cs, но оставим как запасной вариант
-        // menuButton.Pressed += OnMenuButtonPressed;
-        // restartButton.Pressed += OnRestartButtonPressed;
     }
 
     public void UpdateStatus(string text)
@@ -57,14 +53,25 @@ public partial class UI : Control
     public void OnRestartButtonPressed()
     {
         GD.Print("Restart button pressed!");
-        Game game = GetParent() as Game; // Получаем родительский Game
-        if (game != null)
+        if (GetParent() is Game game)
         {
-            game.ResetGame(); // Вызываем метод сброса в Game
+            if (game.gameMode == "multiplayer")
+            {
+                GD.Print("Calling RpcId for SyncResetGame");
+                game.RpcId(0, nameof(game.SyncResetGame));
+            }
+            else
+            {
+                game.ResetGame();
+            }
+        }
+        else if (GetParent() is SinglePlayerGame singlePlayerGame)
+        {
+            singlePlayerGame.ResetGame();
         }
         else
         {
-            GD.PrintErr("UI.OnRestartButtonPressed: Не удалось найти Game!");
+            GD.PrintErr("UI.OnRestartButtonPressed: Не удалось найти Game или SinglePlayerGame!");
         }
     }
 }
