@@ -5,6 +5,8 @@ public partial class Menu : Control
     private Button playVsFriendButton;
     private Button playVsBotButton;
     private Button multiplayerButton;
+    private Button settingsButton; // Новая кнопка Settings
+    private Button exitButton;    // Новая кнопка Exit
     private VBoxContainer mainMenuContainer;
     private int botDifficulty = 0; // Значение по умолчанию для сложности бота
 
@@ -14,6 +16,8 @@ public partial class Menu : Control
         playVsFriendButton = GetNode<Button>("MainMenu/PlayVsFriendButton");
         playVsBotButton = GetNode<Button>("MainMenu/PlayVsBotButton");
         multiplayerButton = GetNode<Button>("MainMenu/MultiplayerButton");
+        settingsButton = GetNode<Button>("MainMenu/SettingsButton"); // Получаем SettingsButton
+        exitButton = GetNode<Button>("MainMenu/ExitButton");
 
         if (mainMenuContainer == null || playVsFriendButton == null || 
             playVsBotButton == null || multiplayerButton == null)
@@ -28,6 +32,8 @@ public partial class Menu : Control
         playVsFriendButton.Pressed += OnFriendButtonPressed;
         playVsBotButton.Pressed += OnBotButtonPressed;
         multiplayerButton.Pressed += OnMultiplayerButtonPressed;
+        settingsButton.Pressed += OnSettingsButtonPressed; // Привязываем обработчик для Settings
+        exitButton.Pressed += OnExitButtonPressed;
 
         mainMenuContainer.Visible = true;
 
@@ -37,7 +43,7 @@ public partial class Menu : Control
     private void OnFriendButtonPressed()
     {
         GD.Print("Friend button pressed!");
-        GetTree().ChangeSceneToFile("res://Scenes/SinglePlayerGame.tscn");
+        LoadScene("res://Scenes/SinglePlayerGame.tscn");
         // Настройка режима происходит в сцене, GetNode здесь не сработает сразу после смены сцены
     }
 
@@ -52,6 +58,18 @@ public partial class Menu : Control
     {
         GD.Print("Multiplayer button pressed!");
         LoadScene("res://Scenes/MultiplayerMenu.tscn");
+    }
+
+    private void OnSettingsButtonPressed()
+    {
+        GD.Print("Settings button pressed!");
+        LoadScene("res://Scenes/Settings.tscn"); // Открываем сцену настроек
+    }
+
+    private void OnExitButtonPressed()
+    {
+        GD.Print("Exit button pressed!");
+        GetTree().Quit(); // Закрываем приложение
     }
 
     private void LoadScene(string path)

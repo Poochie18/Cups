@@ -8,6 +8,8 @@ public partial class SinglePlayerGame : Node2D
     private GridContainer grid;
     private Control player1Table;
     private Control player2Table;
+    private Label player1Label; // Метка для Player1
+    private Label player2Label; // Метка для Player2
     private UI ui;
     private bool gameEnded = false;
     private TextureRect draggedCircle = null;
@@ -46,26 +48,41 @@ public partial class SinglePlayerGame : Node2D
         grid = GetNode<GridContainer>("Grid");
         player1Table = GetNode<Control>("Player1Table");
         player2Table = GetNode<Control>("Player2Table");
+        player1Label = GetNode<Label>("Player1Table/Player1Label");
+        player2Label = GetNode<Label>("Player2Table/Player2Label");
         ui = GetNode<UI>("UI");
         backToMenuButton = GetNode<Button>("UI/BackToMenuButton");
         restartButton = GetNode<Button>("UI/RestartButton");
 
-        if (grid == null || player1Table == null || player2Table == null || ui == null || backToMenuButton == null || restartButton == null)
+        // Проверка на null с отладкой
+        if (grid == null || player1Table == null || player2Table == null || 
+            player1Label == null || player2Label == null || ui == null || 
+            backToMenuButton == null || restartButton == null)
         {
-            GD.Print("Ошибка: Один из узлов не найден!");
-            GD.Print($"grid: {grid}, player1Table: {player1Table}, player2Table: {player2Table}, ui: {ui}, backToMenuButton: {backToMenuButton}, restartButton: {restartButton}");
+            GD.PrintErr("Ошибка: Один из узлов не найден!");
+            GD.Print($"grid: {grid}, player1Table: {player1Table}, player2Table: {player2Table}, " +
+                     $"player1Label: {player1Label}, player2Label: {player2Label}, ui: {ui}, " +
+                     $"backToMenuButton: {backToMenuButton}, restartButton: {restartButton}");
             return;
         }
 
         var global = GetNode<Global>("/root/Global");
         gameMode = global.GameMode;
+
+        // Устанавливаем никнеймы с отладкой
         if (gameMode == "bot")
         {
             SetGameMode("bot", global.BotDifficulty);
+            player1Label.Text = global.PlayerNickname;
+            player2Label.Text = "Bot";
+            GD.Print($"Bot mode: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
         }
         else
         {
             SetGameMode("friend");
+            player1Label.Text = global.PlayerNickname;
+            player2Label.Text = global.PlayerNickname + "_friend";
+            GD.Print($"Friend mode: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
         }
 
         grid.Columns = 3;
@@ -91,7 +108,10 @@ public partial class SinglePlayerGame : Node2D
         CreateCircles(player1Table, "P1");
         CreateCircles(player2Table, "P2");
 
-        ui.UpdateStatus("Ход игрока 1");
+        string initialNickname = currentPlayer == "Player1" ? global.PlayerNickname : 
+                                (gameMode == "bot" ? "Bot" : global.PlayerNickname + "_friend");
+        ui.UpdateStatus($"Ход {initialNickname}");
+        GD.Print($"Initial status: Ход {initialNickname}");
 
         backToMenuButton.Pressed += ui.OnMenuButtonPressed;
         restartButton.Pressed += ui.OnRestartButtonPressed;
@@ -221,6 +241,7 @@ public partial class SinglePlayerGame : Node2D
                     CheckForWinOrDraw();
                     if (!gameEnded)
                     {
+                        var global = GetNode<Global>("/root/Global");
                         if (gameMode == "bot" && currentPlayer == "Player1")
                         {
                             currentPlayer = "Player2";
@@ -231,7 +252,10 @@ public partial class SinglePlayerGame : Node2D
                         else
                         {
                             currentPlayer = currentPlayer == "Player1" ? "Player2" : "Player1";
-                            ui.UpdateStatus($"Ход игрока {(currentPlayer == "Player1" ? "1" : "2")}");
+                            string currentNickname = currentPlayer == "Player1" ? global.PlayerNickname : 
+                                                    (gameMode == "bot" ? "Bot" : global.PlayerNickname + "_friend");
+                            ui.UpdateStatus($"Ход {currentNickname}");
+                            GD.Print($"Updated status: Ход {currentNickname}");
                         }
                     }
                 }
@@ -294,12 +318,15 @@ public partial class SinglePlayerGame : Node2D
 
     private void CheckForWinOrDraw()
     {
+        var global = GetNode<Global>("/root/Global");
         string winner = CheckForWin();
         if (winner != null)
         {
             gameEnded = true;
-            ui.UpdateStatus($"Победил игрок {(winner == "Player1" ? "1" : "2")}");
-            GD.Print($"{winner} wins!");
+            string winnerNickname = winner == "Player1" ? global.PlayerNickname : 
+                                   (gameMode == "bot" ? "Bot" : global.PlayerNickname + "_friend");
+            ui.UpdateStatus($"{winnerNickname} победил!");
+            GD.Print($"{winnerNickname} wins!");
             return;
         }
 

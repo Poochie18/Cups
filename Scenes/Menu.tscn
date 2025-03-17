@@ -43,6 +43,13 @@ theme_override_font_sizes/font_size = 32
 text = "Multiplayer
 "
 
+[node name="SettingsButton" type="Button" parent="MainMenu"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Settings
+"
+
 [node name="ExitButton" type="Button" parent="MainMenu"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2

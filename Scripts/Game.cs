@@ -35,15 +35,20 @@ public partial class Game : Node2D
         grid = GetNode<GridContainer>("Grid");
         player1Table = GetNode<Control>("Player1Table");
         player2Table = GetNode<Control>("Player2Table");
-        player1Label = GetNode<Label>("Player1Table/Player1Label"); // Получаем метку для Player1
+        player1Label = GetNode<Label>("Player1Table/Player1Label");
         player2Label = GetNode<Label>("Player2Table/Player2Label");
         ui = GetNode<UI>("UI");
         backToMenuButton = GetNode<Button>("UI/BackToMenuButton");
         restartButton = GetNode<Button>("UI/RestartButton");
 
-        if (grid == null || player1Table == null || player2Table == null || ui == null || backToMenuButton == null || restartButton == null)
+        if (grid == null || player1Table == null || player2Table == null || 
+            player1Label == null || player2Label == null || ui == null || 
+            backToMenuButton == null || restartButton == null)
         {
-            GD.Print("Ошибка: Один из узлов не найден!");
+            GD.PrintErr("Ошибка: Один из узлов не найден!");
+            GD.Print($"grid: {grid}, player1Table: {player1Table}, player2Table: {player2Table}, " +
+                     $"player1Label: {player1Label}, player2Label: {player2Label}, ui: {ui}, " +
+                     $"backToMenuButton: {backToMenuButton}, restartButton: {restartButton}");
             return;
         }
 
@@ -76,27 +81,30 @@ public partial class Game : Node2D
             return;
         }
 
-        // Подписываемся на сигнал отключения игрока
         Multiplayer.PeerDisconnected += OnPeerDisconnected;
 
+        var global = GetNode<Global>("/root/Global");
         if (Multiplayer.IsServer())
         {
             currentPlayer = "Player1";
-            player1Label.Text = "Player 1 (You)"; // Сервер — Player 1
-            player2Label.Text = "Player 2 (Opponent)";
-            ui.UpdateStatus("Ход игрока 1 (Server)");
+            player1Label.Text = global.PlayerNickname;
+            player2Label.Text = global.OpponentNickname;
+            ui.UpdateStatus($"Ход {global.PlayerNickname} (Server)");
             RpcId(0, nameof(SyncCurrentPlayer), currentPlayer);
-            RpcId(0, nameof(SyncPlayerLabels), "Player 1 (Opponent)", "Player 2 (You)");
+            Rpc(nameof(SyncPlayerLabels), global.PlayerNickname);
+            GD.Print($"Server: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
         }
         else
         {
             currentPlayer = "Player2";
-            player1Label.Text = "Player 1 (Opponent)"; // Клиент — Player 2
-            player2Label.Text = "Player 2 (You)";
-            ui.UpdateStatus("Ожидание хода игрока 1 (Client)");
+            player1Label.Text = global.OpponentNickname;
+            player2Label.Text = global.PlayerNickname;
+            ui.UpdateStatus($"Ожидание хода {global.OpponentNickname} (Client)");
             Vector2 tempPos = player1Table.Position;
             player1Table.Position = player2Table.Position;
             player2Table.Position = tempPos;
+            Rpc(nameof(SyncPlayerLabels), global.PlayerNickname);
+            GD.Print($"Client: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
         }
         GD.Print($"Multiplayer mode: ID {Multiplayer.GetUniqueId()}, IsServer: {Multiplayer.IsServer()}");
 
@@ -104,12 +112,39 @@ public partial class Game : Node2D
         restartButton.Pressed += ui.OnRestartButtonPressed;
     }
 
-    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-    private void SyncPlayerLabels(string p1Label, string p2Label)
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false)]
+    private void SyncPlayerLabels(string senderNickname)
     {
-        player1Label.Text = p1Label;
-        player2Label.Text = p2Label;
-        GD.Print($"Labels synced: P1={p1Label}, P2={p2Label}");
+        if (player1Label == null || player2Label == null)
+        {
+            GD.PrintErr("Ошибка: Метки игроков не инициализированы в SyncPlayerLabels!");
+            return;
+        }
+
+        var global = GetNode<Global>("/root/Global");
+        if (Multiplayer.IsServer())
+        {
+            global.OpponentNickname = senderNickname;
+            player2Label.Text = senderNickname;
+            RpcId(0, nameof(UpdateOpponentLabels), global.PlayerNickname, senderNickname);
+            GD.Print($"Server updated: P2Label={player2Label.Text}");
+        }
+        else
+        {
+            global.OpponentNickname = senderNickname;
+            player1Label.Text = senderNickname;
+            GD.Print($"Client updated: P1Label={player1Label.Text}");
+        }
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void UpdateOpponentLabels(string serverNickname, string clientNickname)
+    {
+        var global = GetNode<Global>("/root/Global");
+        global.OpponentNickname = Multiplayer.IsServer() ? clientNickname : serverNickname;
+        player1Label.Text = Multiplayer.IsServer() ? global.PlayerNickname : serverNickname;
+        player2Label.Text = Multiplayer.IsServer() ? clientNickname : global.PlayerNickname;
+        GD.Print($"Labels updated: P1={player1Label.Text}, P2={player2Label.Text}");
     }
 
     // Обработка отключения игрока
@@ -305,8 +340,12 @@ public partial class Game : Node2D
     private void SyncCurrentPlayer(string newPlayer)
     {
         currentPlayer = newPlayer;
+        var global = GetNode<Global>("/root/Global");
+        string currentNickname = currentPlayer == "Player1" ? 
+            (Multiplayer.IsServer() ? global.PlayerNickname : global.OpponentNickname) : 
+            (Multiplayer.IsServer() ? global.OpponentNickname : global.PlayerNickname);
         GD.Print($"Current player synced to {currentPlayer} by {Multiplayer.GetUniqueId()}");
-        ui.UpdateStatus($"Ход игрока {(currentPlayer == "Player1" ? "1" : "2")}");
+        ui.UpdateStatus($"Ход {currentNickname}");
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
@@ -423,13 +462,17 @@ public partial class Game : Node2D
 
     private void CheckForWinOrDraw()
     {
+        var global = GetNode<Global>("/root/Global");
         string winner = CheckForWin();
         if (winner != null)
         {
             gameEnded = true;
-            ui.UpdateStatus($"Победил игрок {(winner == "Player1" ? "1" : "2")}");
+            string winnerNickname = winner == "Player1" ? 
+                (Multiplayer.IsServer() ? global.PlayerNickname : global.OpponentNickname) : 
+                (Multiplayer.IsServer() ? global.OpponentNickname : global.PlayerNickname);
+            ui.UpdateStatus($"{winnerNickname} победил!");
             GD.Print($"{winner} wins!");
-            RpcId(0, nameof(SyncGameEnd), $"Победил игрок {(winner == "Player1" ? "1" : "2")}");
+            RpcId(0, nameof(SyncGameEnd), $"{winnerNickname} победил!");
             return;
         }
 
@@ -529,6 +572,7 @@ public partial class Game : Node2D
             }
         }
     }
+
 
     private int CalculateFontSize()
     {
