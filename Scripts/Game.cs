@@ -8,6 +8,8 @@ public partial class Game : Node2D
     private GridContainer grid;
     private Control player1Table;
     private Control player2Table;
+    private Label player1Label;  // Добавляем Label для Player1
+    private Label player2Label;
     private UI ui;
     private bool gameEnded = false;
     private TextureRect draggedCircle = null;
@@ -33,6 +35,8 @@ public partial class Game : Node2D
         grid = GetNode<GridContainer>("Grid");
         player1Table = GetNode<Control>("Player1Table");
         player2Table = GetNode<Control>("Player2Table");
+        player1Label = GetNode<Label>("Player1Table/Player1Label"); // Получаем метку для Player1
+        player2Label = GetNode<Label>("Player2Table/Player2Label");
         ui = GetNode<UI>("UI");
         backToMenuButton = GetNode<Button>("UI/BackToMenuButton");
         restartButton = GetNode<Button>("UI/RestartButton");
@@ -72,15 +76,23 @@ public partial class Game : Node2D
             return;
         }
 
+        // Подписываемся на сигнал отключения игрока
+        Multiplayer.PeerDisconnected += OnPeerDisconnected;
+
         if (Multiplayer.IsServer())
         {
             currentPlayer = "Player1";
+            player1Label.Text = "Player 1 (You)"; // Сервер — Player 1
+            player2Label.Text = "Player 2 (Opponent)";
             ui.UpdateStatus("Ход игрока 1 (Server)");
             RpcId(0, nameof(SyncCurrentPlayer), currentPlayer);
+            RpcId(0, nameof(SyncPlayerLabels), "Player 1 (Opponent)", "Player 2 (You)");
         }
         else
         {
             currentPlayer = "Player2";
+            player1Label.Text = "Player 1 (Opponent)"; // Клиент — Player 2
+            player2Label.Text = "Player 2 (You)";
             ui.UpdateStatus("Ожидание хода игрока 1 (Client)");
             Vector2 tempPos = player1Table.Position;
             player1Table.Position = player2Table.Position;
@@ -90,6 +102,31 @@ public partial class Game : Node2D
 
         backToMenuButton.Pressed += ui.OnMenuButtonPressed;
         restartButton.Pressed += ui.OnRestartButtonPressed;
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncPlayerLabels(string p1Label, string p2Label)
+    {
+        player1Label.Text = p1Label;
+        player2Label.Text = p2Label;
+        GD.Print($"Labels synced: P1={p1Label}, P2={p2Label}");
+    }
+
+    // Обработка отключения игрока
+    private void OnPeerDisconnected(long id)
+    {
+        GD.Print($"Игрок с ID {id} отключился!");
+        gameEnded = true; // Останавливаем игру
+        ui.UpdateStatus("Соперник отключился. Игра окончена.");
+        RpcId(0, nameof(ShowDisconnectMessage)); // Уведомляем всех игроков
+    }
+
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void ShowDisconnectMessage()
+    {
+        gameEnded = true;
+        ui.UpdateStatus("Соперник отключился. Игра окончена.");
+        backToMenuButton.Disabled = false; // Активируем кнопку "Back to Menu"
     }
 
     public override void _Input(InputEvent @event)
@@ -186,7 +223,7 @@ public partial class Game : Node2D
                     GD.Print("Calling RpcId for SyncCurrentPlayer");
                     RpcId(0, nameof(SyncCurrentPlayer), newPlayer);
 
-                    CheckForWinOrDraw();
+                    CheckForWinOrDraw(); // Проверяем после каждого хода
                 }
                 else
                 {
@@ -392,6 +429,7 @@ public partial class Game : Node2D
             gameEnded = true;
             ui.UpdateStatus($"Победил игрок {(winner == "Player1" ? "1" : "2")}");
             GD.Print($"{winner} wins!");
+            RpcId(0, nameof(SyncGameEnd), $"Победил игрок {(winner == "Player1" ? "1" : "2")}");
             return;
         }
 
@@ -400,9 +438,17 @@ public partial class Game : Node2D
             gameEnded = true;
             ui.UpdateStatus("Ничья!");
             GD.Print("Game ended in a draw!");
+            RpcId(0, nameof(SyncGameEnd), "Ничья!");
         }
     }
 
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
+    private void SyncGameEnd(string message)
+    {
+        gameEnded = true;
+        ui.UpdateStatus(message);
+        backToMenuButton.Disabled = false; // Активируем кнопку "Back to Menu"
+    }
     private string CheckForWin()
     {
         for (int i = 0; i < WinningCombinations.GetLength(0); i++)

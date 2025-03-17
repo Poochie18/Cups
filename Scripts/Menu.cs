@@ -44,7 +44,7 @@ public partial class Menu : Control
     private void OnBotButtonPressed()
     {
         GD.Print("Bot button pressed!");
-        GetTree().ChangeSceneToFile("res://Scenes/SinglePlayerGame.tscn");
+        LoadScene("res://Scenes/DifficultyMenu.tscn");
         // Настройка режима происходит в сцене
     }
 
