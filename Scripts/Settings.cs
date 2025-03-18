@@ -17,7 +17,6 @@ public partial class Settings : Control
             return;
         }
 
-        // Загружаем текущий никнейм из Global, если он есть, иначе оставляем "Player"
         var global = GetNode<Global>("/root/Global");
         nicknameInput.Text = string.IsNullOrEmpty(global.PlayerNickname) ? "Player" : global.PlayerNickname;
 
@@ -29,7 +28,8 @@ public partial class Settings : Control
     {
         GD.Print("Back button pressed!");
         var global = GetNode<Global>("/root/Global");
-        global.PlayerNickname = nicknameInput.Text; // Сохраняем никнейм в Global
+        global.PlayerNickname = nicknameInput.Text;
+        global.SaveSettings(); // Сохраняем настройки
         LoadScene("res://Scenes/Menu.tscn");
     }
 

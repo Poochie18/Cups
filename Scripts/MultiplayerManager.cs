@@ -3,8 +3,10 @@ using System;
 
 public partial class MultiplayerManager : Node
 {
-    private ENetMultiplayerPeer peer;
-    private const int DEFAULT_PORT = 8910;
+    private WebSocketPeer wsPeer;
+    private const string ServerUrl = "ws://localhost:8080"; // Замените на адрес вашего сервера позже
+    private string currentRoomCode;
+    private bool isHost = false;
 
     [Signal]
     public delegate void RoomCreatedEventHandler(string code);
@@ -14,54 +16,54 @@ public partial class MultiplayerManager : Node
 
     public override void _Ready()
     {
-        Multiplayer.PeerConnected += OnPeerConnected;
-        Multiplayer.ConnectedToServer += OnConnectedToServer;
-        GD.Print("MultiplayerManager initialized");
+        wsPeer = new WebSocketPeer();
+        GD.Print("MultiplayerManager initialized with WebSocketPeer");
     }
 
     public string CreateRoom()
     {
-        if (peer != null)
+        if (wsPeer != null && wsPeer.GetReadyState() != WebSocketPeer.State.Closed)
         {
-            peer.Close();
-            peer = null;
-            Multiplayer.MultiplayerPeer = null;
-            GD.Print("Предыдущий пир очищен перед созданием нового сервера");
+            wsPeer.Close();
+            GD.Print("Предыдущий пир очищен перед созданием новой комнаты");
         }
 
-        peer = new ENetMultiplayerPeer();
-        Error error = peer.CreateServer(DEFAULT_PORT, 1);
+        wsPeer = new WebSocketPeer();
+        currentRoomCode = GenerateRoomCode();
+        string url = $"{ServerUrl}/create?room={currentRoomCode}";
+        Error error = wsPeer.ConnectToUrl(url);
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Ошибка создания сервера: {error}");
+            GD.PrintErr($"Ошибка создания комнаты {currentRoomCode}: {error}");
             return null;
         }
-        Multiplayer.MultiplayerPeer = peer;
-        string roomCode = GenerateRoomCode();
-        GD.Print($"Сервер запущен. Код комнаты: {roomCode}");
-        EmitSignal(SignalName.RoomCreated, roomCode);
-        return roomCode;
+
+        isHost = true;
+        GD.Print($"Подключение к серверу для создания комнаты: {currentRoomCode}");
+        EmitSignal(SignalName.RoomCreated, currentRoomCode);
+        return currentRoomCode;
     }
 
-    public void JoinRoom(string code, string ip = "127.0.0.1")
+    public void JoinRoom(string code, string ip = "")
     {
-        if (peer != null)
+        if (wsPeer != null && wsPeer.GetReadyState() != WebSocketPeer.State.Closed)
         {
-            peer.Close();
-            peer = null;
-            Multiplayer.MultiplayerPeer = null;
+            wsPeer.Close();
             GD.Print("Предыдущий пир очищен перед подключением клиента");
         }
 
-        peer = new ENetMultiplayerPeer();
-        Error error = peer.CreateClient(ip, DEFAULT_PORT);
+        wsPeer = new WebSocketPeer();
+        currentRoomCode = code;
+        string url = $"{ServerUrl}/join?room={code}";
+        Error error = wsPeer.ConnectToUrl(url);
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Ошибка подключения к {ip}:{DEFAULT_PORT}: {error}");
+            GD.PrintErr($"Ошибка подключения к комнате {code}: {error}");
             return;
         }
-        Multiplayer.MultiplayerPeer = peer;
-        GD.Print($"Подключение к комнате {code}");
+
+        isHost = false;
+        GD.Print($"Подключение к комнате {code} через {url}");
     }
 
     private string GenerateRoomCode()
@@ -70,46 +72,61 @@ public partial class MultiplayerManager : Node
         return rand.Next(1000, 10000).ToString();
     }
 
-    private void OnPeerConnected(long id)
+    public void Cleanup()
     {
-        GD.Print($"Игрок подключился: {id}");
-        if (Multiplayer.IsServer())
+        if (wsPeer != null && wsPeer.GetReadyState() != WebSocketPeer.State.Closed)
         {
-            EmitSignal(SignalName.PlayerConnected);
-            RpcId(0, nameof(StartGame)); // Сервер инициирует переход для всех
+            wsPeer.Close();
+            wsPeer = new WebSocketPeer();
+            GD.Print("Сетевой пир очищен при возвращении в меню");
         }
     }
 
-    private void OnConnectedToServer()
+    public override void _Process(double delta)
     {
-        GD.Print("Успешно подключились к серверу");
-        EmitSignal(SignalName.PlayerConnected);
-    }
+        if (wsPeer == null) return;
 
-    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
-    private void StartGame()
-    {
-        GD.Print($"StartGame called on ID {Multiplayer.GetUniqueId()}");
-        GetTree().ChangeSceneToFile("res://Scenes/Game.tscn");
-    }
-
-    public void Cleanup()
-    {
-        if (peer != null)
+        wsPeer.Poll();
+        var state = wsPeer.GetReadyState();
+        if (state == WebSocketPeer.State.Open)
         {
-            peer.Close();
-            peer = null;
-            Multiplayer.MultiplayerPeer = null;
-            GD.Print("Сетевой пир очищен при возвращении в меню");
+            while (wsPeer.GetAvailablePacketCount() > 0)
+            {
+                var packet = wsPeer.GetPacket();
+                if (packet != null)
+                {
+                    string message = packet.GetStringFromUtf8();
+                    GD.Print($"Получено сообщение: {message}");
+                    if (message.Contains("\"type\":\"start\""))
+                    {
+                        EmitSignal(SignalName.PlayerConnected);
+                        GetTree().ChangeSceneToFile("res://Scenes/Game.tscn");
+                    }
+                }
+            }
+        }
+        else if (state == WebSocketPeer.State.Closed)
+        {
+            GD.Print("WebSocket соединение закрыто");
         }
     }
 
     public override void _ExitTree()
     {
-        if (peer != null)
+        if (wsPeer != null && wsPeer.GetReadyState() != WebSocketPeer.State.Closed)
         {
-            peer.Close();
+            wsPeer.Close();
             GD.Print("Сетевой пир закрыт при выходе");
         }
+    }
+
+    public bool IsHost()
+    {
+        return isHost;
+    }
+
+    public WebSocketPeer GetWebSocketPeer()
+    {
+        return wsPeer;
     }
 }

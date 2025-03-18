@@ -64,7 +64,7 @@ public partial class MultiplayerMenu : Control
     private void OnRoomCreated(string code)
     {
         GD.Print($"Room created: {code}");
-        roomCodeLabel.Text = $"Room Code: {code} (Waiting...)";
+        roomCodeLabel.Text = $"Room Code: {code} (Waiting...)"; // Исправлено roosmCodeLabel на roomCodeLabel
     }
 
     private void OnJoinRoomButtonPressed()
@@ -84,7 +84,7 @@ public partial class MultiplayerMenu : Control
     private void OnPlayerConnected()
     {
         GD.Print("Игрок подключен, ожидаем перехода в игру");
-        QueueFree(); // Удаляем меню, ждем RPC StartGame
+        QueueFree(); // Удаляем меню
     }
 
     private void OnBackButtonPressed()
