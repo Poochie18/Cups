@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://br8j62yp2w4yc"]
 
-[ext_resource type="Script" uid="uid://0wxwwsx2s4cc" path="res://Scripts/DifficultyMenu.cs" id="1_s2ra4"]
+[ext_resource type="Script" uid="uid://chx8cngttl4kj" path="res://Scripts/DifficultyMenu.cs" id="1_s2ra4"]
 
 [node name="DifficultyMenu" type="Control"]
 layout_mode = 3

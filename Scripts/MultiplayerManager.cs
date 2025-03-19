@@ -4,7 +4,7 @@ using System;
 public partial class MultiplayerManager : Node
 {
     private WebSocketPeer wsPeer;
-    private const string ServerUrl = "ws://localhost:8080"; // Замените на адрес вашего сервера позже
+    private const string ServerUrl = "ws://localhost:8080";
     private string currentRoomCode;
     private bool isHost = false;
 
@@ -13,6 +13,9 @@ public partial class MultiplayerManager : Node
 
     [Signal]
     public delegate void PlayerConnectedEventHandler();
+
+    [Signal]
+    public delegate void MessageReceivedEventHandler(string message); // Новый сигнал для сообщений
 
     public override void _Ready()
     {
@@ -93,21 +96,25 @@ public partial class MultiplayerManager : Node
             while (wsPeer.GetAvailablePacketCount() > 0)
             {
                 var packet = wsPeer.GetPacket();
-                if (packet != null)
+                if (packet != null && !packet.IsEmpty())
                 {
                     string message = packet.GetStringFromUtf8();
-                    GD.Print($"Получено сообщение: {message}");
+                    GD.Print($"MultiplayerManager received: {message}");
                     if (message.Contains("\"type\":\"start\""))
                     {
                         EmitSignal(SignalName.PlayerConnected);
                         GetTree().ChangeSceneToFile("res://Scenes/Game.tscn");
+                    }
+                    else
+                    {
+                        EmitSignal(SignalName.MessageReceived, message); // Передаём все остальные сообщения
                     }
                 }
             }
         }
         else if (state == WebSocketPeer.State.Closed)
         {
-            GD.Print("WebSocket соединение закрыто");
+            //GD.Print("WebSocket соединение закрыто");
         }
     }
 
