@@ -21,7 +21,9 @@ public partial class Game : Node2D
     public string gameMode = "multiplayer";
     private Button backToMenuButton;
     private Button restartButton;
+    private bool restartRequested = false; // Флаг для отслеживания запроса рестарта
     private MultiplayerManager multiplayerManager;
+    private GameOverModal gameOverModal;
 
     private static readonly int[,] WinningCombinations = new int[,]
     {
@@ -42,18 +44,32 @@ public partial class Game : Node2D
         backToMenuButton = GetNode<Button>("UI/BackToMenuButton");
         restartButton = GetNode<Button>("UI/RestartButton");
         multiplayerManager = GetNode<MultiplayerManager>("/root/MultiplayerManager");
+        gameOverModal = GetNode<GameOverModal>("GameOverModal");
 
         if (grid == null || player1Table == null || player2Table == null || 
             player1Label == null || player2Label == null || ui == null || 
-            backToMenuButton == null || restartButton == null || multiplayerManager == null)
+            backToMenuButton == null || restartButton == null || multiplayerManager == null || gameOverModal == null)
         {
             GD.PrintErr("Ошибка: Один из узлов не найден!");
             GD.Print($"grid: {grid}, player1Table: {player1Table}, player2Table: {player2Table}, " +
                     $"player1Label: {player1Label}, player2Label: {player2Label}, ui: {ui}, " +
                     $"backToMenuButton: {backToMenuButton}, restartButton: {restartButton}, " +
-                    $"multiplayerManager: {multiplayerManager}");
+                    $"multiplayerManager: {multiplayerManager}, gameOverModal: {gameOverModal}");
             return;
         }
+
+        if (gameOverModal.ResultLabel == null || gameOverModal.InstructionLabel == null || 
+            gameOverModal.MenuButton == null || gameOverModal.RestartButton == null)
+        {
+            GD.PrintErr("Ошибка: Один из элементов GameOverModal не привязан!");
+            GD.Print($"ResultLabel: {gameOverModal.ResultLabel}, InstructionLabel: {gameOverModal.InstructionLabel}, " +
+                    $"MenuButton: {gameOverModal.MenuButton}, RestartButton: {gameOverModal.RestartButton}");
+            return;
+        }
+
+        gameOverModal.Visible = false;
+        restartRequested = false; // Сбрасываем флаг при старте
+        GD.Print($"GameOverModal initialized: Position={gameOverModal.Position}, Size={gameOverModal.Size}, Visible={gameOverModal.Visible}");
 
         grid.Columns = 3;
         gridButtons = new Button[9];
@@ -93,16 +109,11 @@ public partial class Game : Node2D
             player1Label.Text = global.OpponentNickname;
             player2Label.Text = global.PlayerNickname;
             ui.UpdateStatus($"Ход {global.OpponentNickname}");
-
-            // Перестановка позиций столов
             Vector2 tempPos = player1Table.Position;
-            player1Table.Position = player2Table.Position; // player1Table (P1_*) идёт вверх
-            player2Table.Position = tempPos;               // player2Table (P2_*) идёт вниз
-
-            // Круги остаются в своих столах, просто обновляем их позиции
+            player1Table.Position = player2Table.Position;
+            player2Table.Position = tempPos;
             UpdateCirclePositions(player1Table);
             UpdateCirclePositions(player2Table);
-
             SendMessage($"sync_labels:{global.PlayerNickname}");
         }
 
@@ -110,6 +121,9 @@ public partial class Game : Node2D
         GD.Print($"Initial state: Host={multiplayerManager.IsHost()}, CurrentPlayer={currentPlayer}");
         backToMenuButton.Pressed += ui.OnMenuButtonPressed;
         restartButton.Pressed += ui.OnRestartButtonPressed;
+
+        gameOverModal.MenuButton.Pressed += OnMenuButtonPressed;
+        gameOverModal.RestartButton.Pressed += OnRestartButtonPressed;
     }
 
     private void UpdateCirclePositions(Control table)
@@ -163,7 +177,7 @@ public partial class Game : Node2D
             string senderNickname = message.Split(':')[1];
             if (multiplayerManager.IsHost())
             {
-                if (global.OpponentNickname != senderNickname) // Проверяем, чтобы не перезаписывать
+                if (global.OpponentNickname != senderNickname)
                 {
                     global.OpponentNickname = senderNickname;
                     player2Label.Text = senderNickname;
@@ -195,16 +209,14 @@ public partial class Game : Node2D
 
             if (multiplayerManager.IsHost())
             {
-                // Хост: P1 — свой ник, P2 — ник клиента
-                player1Label.Text = global.PlayerNickname; // Poochie22
-                player2Label.Text = clientNickname; // Poochie
+                player1Label.Text = global.PlayerNickname;
+                player2Label.Text = clientNickname;
                 global.OpponentNickname = clientNickname;
             }
             else
             {
-                // Клиент: P1 — ник хоста, P2 — свой ник
-                player1Label.Text = serverNickname; // Poochie22
-                player2Label.Text = global.PlayerNickname; // Poochie
+                player1Label.Text = serverNickname;
+                player2Label.Text = global.PlayerNickname;
                 global.OpponentNickname = serverNickname;
             }
             GD.Print($"Labels updated: P1={player1Label.Text}, P2={player2Label.Text}");
@@ -242,14 +254,18 @@ public partial class Game : Node2D
                 string winner = parts[2];
                 string winnerName = winner == "Player1" ? player1Label.Text : player2Label.Text;
                 GD.Print($"{winner} wins (received)!");
-                ui.UpdateStatus($"{winnerName} победил!");
+                gameOverModal.ResultLabel.Text = $"{winnerName} победил!";
+                gameOverModal.Visible = true;
+                GD.Print($"Showing GameOverModal: Position={gameOverModal.Position}, Size={gameOverModal.Size}, Visible={gameOverModal.Visible}");
                 gameEnded = true;
                 GD.Print($"Game ended set to true for winner: {winner}");
             }
             else if (result == "draw")
             {
                 GD.Print("Draw (received)!");
-                ui.UpdateStatus("Ничья!");
+                gameOverModal.ResultLabel.Text = "Ничья!";
+                gameOverModal.Visible = true;
+                GD.Print($"Showing GameOverModal: Position={gameOverModal.Position}, Size={gameOverModal.Size}, Visible={gameOverModal.Visible}");
                 gameEnded = true;
                 GD.Print("Game ended set to true for draw");
             }
@@ -257,6 +273,26 @@ public partial class Game : Node2D
             {
                 GD.Print($"Unknown game_over result: {result}");
             }
+        }
+        else if (message.StartsWith("restart_request:"))
+        {
+            string requesterNickname = message.Split(':')[1];
+            restartRequested = true;
+            ui.UpdateStatus($"Игрок {requesterNickname} ожидает");
+            GD.Print($"Restart requested by {requesterNickname}");
+            gameOverModal.Visible = true; // Убеждаемся, что окно видно для ответа
+        }
+        else if (message == "restart_confirmed")
+        {
+            GD.Print("Restart confirmed by opponent, reloading scene");
+            GetTree().ReloadCurrentScene();
+        }
+        else if (message.StartsWith("player_left:"))
+        {
+            string leaverNickname = message.Split(':')[1];
+            ui.UpdateStatus($"Игрок {leaverNickname} покинул игру");
+            GD.Print($"Player {leaverNickname} left the game");
+            gameOverModal.Visible = true; // Показываем окно для оставшегося игрока
         }
         else
         {
@@ -694,7 +730,6 @@ public partial class Game : Node2D
 
             GD.Print($"Combo {i}: ({a/3},{a%3})={cellA}, ({b/3},{b%3})={cellB}, ({c/3},{c%3})={cellC}");
 
-            // Проверяем, что все ячейки заняты и принадлежат одному игроку
             if (cellA != "" && cellB != "" && cellC != "" &&
                 cellA.StartsWith("P1") == cellB.StartsWith("P1") && 
                 cellB.StartsWith("P1") == cellC.StartsWith("P1"))
@@ -702,7 +737,9 @@ public partial class Game : Node2D
                 string winner = cellA.StartsWith("P1") ? "Player1" : "Player2";
                 GD.Print($"{winner} wins!");
                 string winnerName = winner == "Player1" ? player1Label.Text : player2Label.Text;
-                ui.UpdateStatus($"{winnerName} победил!");
+                gameOverModal.ResultLabel.Text = $"{winnerName} победил!";
+                gameOverModal.Visible = true;
+                GD.Print($"Showing GameOverModal: Position={gameOverModal.Position}, Size={gameOverModal.Size}, Visible={gameOverModal.Visible}");
                 gameEnded = true;
 
                 SendMessage($"game_over:win:{winner}");
@@ -723,11 +760,14 @@ public partial class Game : Node2D
         if (isDraw)
         {
             GD.Print("Draw!");
-            ui.UpdateStatus("Ничья!");
+            gameOverModal.ResultLabel.Text = "Ничья!";
+            gameOverModal.Visible = true;
+            GD.Print($"Showing GameOverModal: Position={gameOverModal.Position}, Size={gameOverModal.Size}, Visible={gameOverModal.Visible}");
             gameEnded = true;
 
             SendMessage("game_over:draw");
             GD.Print("Game ended with draw");
+            return;
         }
     }
 
@@ -819,7 +859,31 @@ public partial class Game : Node2D
         }
     }
 
+    private void OnRestartButtonPressed()
+    {
+        var global = GetNode<Global>("/root/Global");
+        if (!restartRequested)
+        {
+            SendMessage($"restart_request:{global.PlayerNickname}");
+            restartRequested = true;
+            ui.UpdateStatus($"Ожидание второго игрока...");
+            GD.Print($"Restart requested by {global.PlayerNickname}");
+        }
+        else
+        {
+            SendMessage("restart_confirmed");
+            GetTree().ReloadCurrentScene();
+            GD.Print("Restart confirmed, reloading scene");
+        }
+    }
 
+    private void OnMenuButtonPressed()
+    {
+        var global = GetNode<Global>("/root/Global");
+        SendMessage($"player_left:{global.PlayerNickname}");
+        GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn");
+        GD.Print($"Player {global.PlayerNickname} left the game");
+    }
     private int CalculateFontSize()
     {
         Vector2 screenSize = GetViewport().GetVisibleRect().Size;

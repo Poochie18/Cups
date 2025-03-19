@@ -1,0 +1,89 @@
+[gd_scene load_steps=2 format=3 uid="uid://xgwyf5lsfkt6"]
+
+[ext_resource type="Script" uid="uid://wev6w43kflyi" path="res://Scripts/GameOverModal.cs" id="1_stl7u"]
+
+[node name="GameOverModal" type="Control" node_paths=PackedStringArray("ResultLabel", "InstructionLabel", "MenuButton", "RestartButton")]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -1.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_stl7u")
+ResultLabel = NodePath("Panel/ResultLabel")
+InstructionLabel = NodePath("Panel/InstructionLabel")
+MenuButton = NodePath("Panel/MenuButton")
+RestartButton = NodePath("Panel/RestartButton")
+
+[node name="Panel" type="Panel" parent="."]
+self_modulate = Color(0.414648, 0.585808, 1, 1)
+custom_minimum_size = Vector2(500, 350)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -100.0
+offset_right = 150.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultLabel" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -66.5
+offset_top = 25.0
+offset_right = 61.5
+offset_bottom = 70.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 32
+text = "Победа!"
+
+[node name="InstructionLabel" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -159.0
+offset_top = 100.0
+offset_right = 154.0
+offset_bottom = 123.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 14
+text = "Для ещё одной игры нажмите Рестарт"
+horizontal_alignment = 1
+
+[node name="MenuButton" type="Button" parent="Panel"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 100.0
+offset_top = -150.0
+offset_right = 153.0
+offset_bottom = -119.0
+grow_vertical = 0
+text = "Menu"
+
+[node name="RestartButton" type="Button" parent="Panel"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -150.0
+offset_right = -85.0
+offset_bottom = -119.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "Restart"
