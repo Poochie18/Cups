@@ -11,19 +11,30 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_s2ra4")
 
-[node name="DifficultyOptions" type="VBoxContainer" parent="."]
+[node name="Frame" type="MarginContainer" parent="."]
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.2
-anchor_top = 0.3
-anchor_right = 0.8
-anchor_bottom = 0.7
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -354.0
+offset_top = -300.5
+offset_right = 354.0
+offset_bottom = 300.5
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 100
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 100
+
+[node name="DifficultyOptions" type="VBoxContainer" parent="Frame"]
+layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="EasyButton" type="Button" parent="DifficultyOptions"]
+[node name="EasyButton" type="Button" parent="Frame/DifficultyOptions"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 size_flags_vertical = 4
@@ -31,20 +42,20 @@ theme_override_font_sizes/font_size = 32
 text = "Easy
 "
 
-[node name="MediumButton" type="Button" parent="DifficultyOptions"]
+[node name="MediumButton" type="Button" parent="Frame/DifficultyOptions"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Medium
 "
 
-[node name="HardButton" type="Button" parent="DifficultyOptions"]
+[node name="HardButton" type="Button" parent="Frame/DifficultyOptions"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Hard"
 
-[node name="BackButton" type="Button" parent="DifficultyOptions"]
+[node name="BackButton" type="Button" parent="Frame/DifficultyOptions"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32

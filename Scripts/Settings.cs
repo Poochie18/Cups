@@ -7,8 +7,8 @@ public partial class Settings : Control
 
     public override void _Ready()
     {
-        backButton = GetNode<Button>("SettingsContainer/BackButton");
-        nicknameInput = GetNode<LineEdit>("SettingsContainer/NicknameInput");
+        backButton = GetNode<Button>("Frame/SettingsContainer/BackButton");
+        nicknameInput = GetNode<LineEdit>("Frame/SettingsContainer/NicknameInput");
 
         if (backButton == null || nicknameInput == null)
         {

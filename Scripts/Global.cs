@@ -12,6 +12,12 @@ public partial class Global : Node
     public override void _Ready()
     {
         LoadSettings(); // Загружаем настройки при старте
+        if (OS.GetName() == "Android")
+        {
+            // Устанавливаем размер окна в горизонтальной ориентации
+            DisplayServer.WindowSetSize(new Vector2I(1280, 720));
+            GD.Print("Window size set to 1280x720 for Android (forcing landscape)");
+        }
         GD.Print("Global script initialized");
     }
 

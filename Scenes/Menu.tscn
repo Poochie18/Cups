@@ -11,46 +11,57 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_usfse")
 
-[node name="MainMenu" type="VBoxContainer" parent="."]
+[node name="Frame" type="MarginContainer" parent="."]
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.2
-anchor_top = 0.3
-anchor_right = 0.8
-anchor_bottom = 0.7
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -354.0
+offset_top = -300.5
+offset_right = 354.0
+offset_bottom = 300.5
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 100
+theme_override_constants/margin_top = 100
+theme_override_constants/margin_right = 100
+theme_override_constants/margin_bottom = 100
+
+[node name="MainMenu" type="VBoxContainer" parent="Frame"]
+layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="PlayVsFriendButton" type="Button" parent="MainMenu"]
+[node name="PlayVsFriendButton" type="Button" parent="Frame/MainMenu"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 32
 text = "Play VS Friend"
 
-[node name="PlayVsBotButton" type="Button" parent="MainMenu"]
+[node name="PlayVsBotButton" type="Button" parent="Frame/MainMenu"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Play VS Bot"
 
-[node name="MultiplayerButton" type="Button" parent="MainMenu"]
+[node name="MultiplayerButton" type="Button" parent="Frame/MainMenu"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Multiplayer
 "
 
-[node name="SettingsButton" type="Button" parent="MainMenu"]
+[node name="SettingsButton" type="Button" parent="Frame/MainMenu"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Settings
 "
 
-[node name="ExitButton" type="Button" parent="MainMenu"]
+[node name="ExitButton" type="Button" parent="Frame/MainMenu"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32

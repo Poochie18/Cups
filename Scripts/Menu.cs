@@ -5,71 +5,82 @@ public partial class Menu : Control
     private Button playVsFriendButton;
     private Button playVsBotButton;
     private Button multiplayerButton;
-    private Button settingsButton; // Новая кнопка Settings
-    private Button exitButton;    // Новая кнопка Exit
+    private Button settingsButton;
+    private Button exitButton;
     private VBoxContainer mainMenuContainer;
-    private int botDifficulty = 0; // Значение по умолчанию для сложности бота
 
     public override void _Ready()
     {
-        mainMenuContainer = GetNode<VBoxContainer>("MainMenu");
-        playVsFriendButton = GetNode<Button>("MainMenu/PlayVsFriendButton");
-        playVsBotButton = GetNode<Button>("MainMenu/PlayVsBotButton");
-        multiplayerButton = GetNode<Button>("MainMenu/MultiplayerButton");
-        settingsButton = GetNode<Button>("MainMenu/SettingsButton"); // Получаем SettingsButton
-        exitButton = GetNode<Button>("MainMenu/ExitButton");
+        // Инициализация узлов
+        mainMenuContainer = GetNode<VBoxContainer>("Frame/MainMenu");
+        playVsFriendButton = GetNode<Button>("Frame/MainMenu/PlayVsFriendButton");
+        playVsBotButton = GetNode<Button>("Frame/MainMenu/PlayVsBotButton");
+        multiplayerButton = GetNode<Button>("Frame/MainMenu/MultiplayerButton");
+        settingsButton = GetNode<Button>("Frame/MainMenu/SettingsButton");
+        exitButton = GetNode<Button>("Frame/MainMenu/ExitButton");
 
         if (mainMenuContainer == null || playVsFriendButton == null || 
-            playVsBotButton == null || multiplayerButton == null)
+            playVsBotButton == null || multiplayerButton == null || 
+            settingsButton == null || exitButton == null)
         {
             GD.PrintErr("Ошибка: Не найдены узлы меню!");
-            GD.Print($"mainMenu: {mainMenuContainer}");
-            GD.Print($"playVsFriend: {playVsFriendButton}, playVsBot: {playVsBotButton}, multiplayer: {multiplayerButton}");
             return;
         }
 
-        // Исправляем имена методов в привязке событий
+        // Настройка кнопок
+        foreach (Node child in mainMenuContainer.GetChildren())
+        {
+            if (child is Button btn)
+            {
+                btn.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+                btn.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                btn.AddThemeFontSizeOverride("font_size", CalculateFontSize());
+            }
+        }
+
+        // Привязка событий
         playVsFriendButton.Pressed += OnFriendButtonPressed;
         playVsBotButton.Pressed += OnBotButtonPressed;
         multiplayerButton.Pressed += OnMultiplayerButtonPressed;
-        settingsButton.Pressed += OnSettingsButtonPressed; // Привязываем обработчик для Settings
+        settingsButton.Pressed += OnSettingsButtonPressed;
         exitButton.Pressed += OnExitButtonPressed;
 
         mainMenuContainer.Visible = true;
-
         GD.Print("Menu initialized. Screen size: ", GetViewportRect().Size);
     }
 
     private void OnFriendButtonPressed()
     {
         GD.Print("Friend button pressed!");
+        var global = GetNode<Global>("/root/Global");
+        global.GameMode = "friend";
         LoadScene("res://Scenes/SinglePlayerGame.tscn");
-        // Настройка режима происходит в сцене, GetNode здесь не сработает сразу после смены сцены
     }
 
     private void OnBotButtonPressed()
     {
         GD.Print("Bot button pressed!");
         LoadScene("res://Scenes/DifficultyMenu.tscn");
-        // Настройка режима происходит в сцене
     }
 
     private void OnMultiplayerButtonPressed()
     {
         GD.Print("Multiplayer button pressed!");
+        var global = GetNode<Global>("/root/Global");
+        global.GameMode = "multiplayer";
         LoadScene("res://Scenes/MultiplayerMenu.tscn");
     }
 
     private void OnSettingsButtonPressed()
     {
         GD.Print("Settings button pressed!");
-        LoadScene("res://Scenes/Settings.tscn"); // Открываем сцену настроек
+        LoadScene("res://Scenes/Settings.tscn");
     }
 
     private void OnExitButtonPressed()
     {
         GD.Print("Exit button pressed!");
-        GetTree().Quit(); // Закрываем приложение
+        GetTree().Quit();
     }
 
     private void LoadScene(string path)
@@ -81,11 +92,17 @@ public partial class Menu : Control
             Node sceneInstance = scene.Instantiate();
             GetTree().Root.AddChild(sceneInstance);
             GD.Print($"Scene {path} loaded and added to tree");
-            QueueFree(); // Удаляем текущую сцену
+            QueueFree();
         }
         else
         {
             GD.PrintErr($"Ошибка: Не удалось загрузить сцену {path}!");
         }
+    }
+
+    private int CalculateFontSize()
+    {
+        Vector2 screenSize = GetViewport().GetVisibleRect().Size;
+        return Mathf.Clamp((int)(screenSize.Y / 20f), 24, 64);
     }
 }

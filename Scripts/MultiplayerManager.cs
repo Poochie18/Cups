@@ -4,7 +4,7 @@ using System;
 public partial class MultiplayerManager : Node
 {
     private WebSocketPeer wsPeer;
-    private const string ServerUrl = "wss://tic-tac-toe-server.onrender.com"; // Замените на ваш URL после деплоя
+    private const string ServerUrl = "wss://tic-tac-toe-server-b4ms.onrender.com"; // Ваш URL
     private string currentRoomCode;
     private bool isHost = false;
 
@@ -35,7 +35,7 @@ public partial class MultiplayerManager : Node
         Error error = wsPeer.ConnectToUrl($"{ServerUrl}/create");
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Failed to create room: {error}");
+            GD.PrintErr($"Failed to connect to {ServerUrl}/create: Error {error}");
             return;
         }
 
@@ -56,7 +56,7 @@ public partial class MultiplayerManager : Node
         Error error = wsPeer.ConnectToUrl($"{ServerUrl}/join?room={code}");
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Failed to join room {code}: {error}");
+            GD.PrintErr($"Failed to connect to {ServerUrl}/join?room={code}: Error {error}");
             return;
         }
 
@@ -103,49 +103,59 @@ public partial class MultiplayerManager : Node
                     string message = packet.GetStringFromUtf8();
                     GD.Print($"MultiplayerManager received: {message}");
 
-                    var json = new Json();
-                    Error parseResult = json.Parse(message);
-                    if (parseResult == Error.Ok)
+                    // Проверяем, является ли сообщение JSON
+                    if (message.StartsWith("{") && message.EndsWith("}"))
                     {
-                        Variant dataVariant = json.Data;
-                        if (dataVariant.VariantType == Variant.Type.Dictionary)
+                        var json = new Json();
+                        Error parseResult = json.Parse(message);
+                        if (parseResult == Error.Ok)
                         {
-                            var data = (Godot.Collections.Dictionary)dataVariant.Obj;
-                            if (data.ContainsKey("type"))
+                            Variant dataVariant = json.Data;
+                            if (dataVariant.VariantType == Variant.Type.Dictionary)
                             {
-                                string type = data["type"].AsString();
-                                if (type == "created" && data.ContainsKey("roomCode"))
+                                var data = (Godot.Collections.Dictionary)dataVariant.Obj;
+                                if (data.ContainsKey("type"))
                                 {
-                                    currentRoomCode = data["roomCode"].AsString();
-                                    EmitSignal(SignalName.RoomCreated, currentRoomCode);
+                                    string type = data["type"].AsString();
+                                    if (type == "created" && data.ContainsKey("roomCode"))
+                                    {
+                                        currentRoomCode = data["roomCode"].AsString();
+                                        EmitSignal(SignalName.RoomCreated, currentRoomCode);
+                                    }
+                                    else if (type == "start")
+                                    {
+                                        EmitSignal(SignalName.PlayerConnected);
+                                        GetTree().ChangeSceneToFile("res://Scenes/Game.tscn");
+                                    }
+                                    else if (type == "error")
+                                    {
+                                        GD.PrintErr($"Server error: {message}");
+                                    }
                                 }
-                                else if (type == "start")
-                                {
-                                    EmitSignal(SignalName.PlayerConnected);
-                                    GetTree().ChangeSceneToFile("res://Scenes/Game.tscn");
-                                }
-                                else if (type == "error")
-                                {
-                                    GD.PrintErr($"Server error: {message}");
-                                }
+                            }
+                            else
+                            {
+                                GD.Print($"Received JSON but not a dictionary: {message}");
+                                EmitSignal(SignalName.MessageReceived, message);
                             }
                         }
                         else
                         {
-                            EmitSignal(SignalName.MessageReceived, message); // Передаём как строку, если не словарь
+                            GD.PrintErr($"Failed to parse JSON: {parseResult} for message: {message}");
+                            EmitSignal(SignalName.MessageReceived, message); // Передаём как строку
                         }
                     }
                     else
                     {
-                        GD.PrintErr($"Failed to parse JSON: {parseResult}");
-                        EmitSignal(SignalName.MessageReceived, message); // Передаём как строку, если не JSON
+                        // Если не JSON, передаём как есть
+                        EmitSignal(SignalName.MessageReceived, message);
                     }
                 }
             }
         }
         else if (state == WebSocketPeer.State.Closed)
         {
-            GD.Print("WebSocket connection closed");
+            //GD.Print("WebSocket connection closed");
         }
     }
 

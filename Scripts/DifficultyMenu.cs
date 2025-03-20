@@ -9,10 +9,10 @@ public partial class DifficultyMenu : Control
 
     public override void _Ready()
     {
-        easyButton = GetNode<Button>("DifficultyOptions/EasyButton");
-        mediumButton = GetNode<Button>("DifficultyOptions/MediumButton");
-        hardButton = GetNode<Button>("DifficultyOptions/HardButton");
-        backButton = GetNode<Button>("DifficultyOptions/BackButton");
+        easyButton = GetNode<Button>("Frame/DifficultyOptions/EasyButton");
+        mediumButton = GetNode<Button>("Frame/DifficultyOptions/MediumButton");
+        hardButton = GetNode<Button>("Frame/DifficultyOptions/HardButton");
+        backButton = GetNode<Button>("Frame/DifficultyOptions/BackButton");
 
         if (easyButton == null || mediumButton == null || hardButton == null || backButton == null)
         {

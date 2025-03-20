@@ -12,12 +12,12 @@ public partial class MultiplayerMenu : Control
 
     public override void _Ready()
     {
-        multiplayerOptions = GetNode<VBoxContainer>("MultiplayerOptions");
-        createRoomButton = GetNode<Button>("MultiplayerOptions/CreateRoomButton");
-        roomCodeInput = GetNode<LineEdit>("MultiplayerOptions/RoomCodeInput");
-        joinRoomButton = GetNode<Button>("MultiplayerOptions/JoinRoomButton");
-        backButton = GetNode<Button>("MultiplayerOptions/BackButton");
-        roomCodeLabel = GetNode<Label>("MultiplayerOptions/RoomCodeLabel");
+        multiplayerOptions = GetNode<VBoxContainer>("Frame/MultiplayerOptions");
+        createRoomButton = GetNode<Button>("Frame/MultiplayerOptions/CreateRoomButton");
+        roomCodeInput = GetNode<LineEdit>("Frame/MultiplayerOptions/RoomCodeInput");
+        joinRoomButton = GetNode<Button>("Frame/MultiplayerOptions/JoinRoomButton");
+        backButton = GetNode<Button>("Frame/MultiplayerOptions/BackButton");
+        roomCodeLabel = GetNode<Label>("Frame/MultiplayerOptions/RoomCodeLabel");
         multiplayerManager = GetNode<MultiplayerManager>("/root/MultiplayerManager");
 
         if (multiplayerOptions == null || createRoomButton == null || roomCodeInput == null || 
@@ -49,22 +49,14 @@ public partial class MultiplayerMenu : Control
     private void OnCreateRoomButtonPressed()
     {
         GD.Print("Create Room button pressed!");
-        string code = multiplayerManager.CreateRoom();
-        if (code == null)
-        {
-            roomCodeLabel.Text = "Failed to create room!";
-        }
-        else
-        {
-            roomCodeLabel.Text = $"Room Code: {code}";
-            GD.Print($"Ожидание подключения второго игрока...");
-        }
+        multiplayerManager.CreateRoom(); // Просто вызываем метод, код придёт через сигнал
+        roomCodeLabel.Text = "Creating room..."; // Временный текст до получения кода
     }
 
     private void OnRoomCreated(string code)
     {
         GD.Print($"Room created: {code}");
-        roomCodeLabel.Text = $"Room Code: {code} (Waiting...)"; // Исправлено roosmCodeLabel на roomCodeLabel
+        roomCodeLabel.Text = $"Room Code: {code} (Waiting...)";
     }
 
     private void OnJoinRoomButtonPressed()
