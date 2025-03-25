@@ -4,8 +4,8 @@ using System;
 public partial class MultiplayerManager : Node
 {
     private WebSocketPeer wsPeer;
-    private const string ServerUrl = "wss://tic-tac-toe-server-b4ms.onrender.com"; // Ваш URL
-    private string currentRoomCode;
+    private const string ServerUrl = "wss://tic-tac-toe-server-b4ms.onrender.com";
+    private string currentRoomCode = "";
     private bool isHost = false;
 
     [Signal]
@@ -40,6 +40,7 @@ public partial class MultiplayerManager : Node
         }
 
         isHost = true;
+        currentRoomCode = ""; // Сбрасываем код комнаты до получения нового
         GD.Print("Connecting to server to create room");
     }
 
@@ -85,6 +86,8 @@ public partial class MultiplayerManager : Node
             wsPeer = new WebSocketPeer();
             GD.Print("Network peer cleaned up on menu return");
         }
+        currentRoomCode = "";
+        isHost = false;
     }
 
     public override void _Process(double delta)
@@ -103,7 +106,6 @@ public partial class MultiplayerManager : Node
                     string message = packet.GetStringFromUtf8();
                     GD.Print($"MultiplayerManager received: {message}");
 
-                    // Проверяем, является ли сообщение JSON
                     if (message.StartsWith("{") && message.EndsWith("}"))
                     {
                         var json = new Json();
@@ -142,12 +144,11 @@ public partial class MultiplayerManager : Node
                         else
                         {
                             GD.PrintErr($"Failed to parse JSON: {parseResult} for message: {message}");
-                            EmitSignal(SignalName.MessageReceived, message); // Передаём как строку
+                            EmitSignal(SignalName.MessageReceived, message);
                         }
                     }
                     else
                     {
-                        // Если не JSON, передаём как есть
                         EmitSignal(SignalName.MessageReceived, message);
                     }
                 }
@@ -155,7 +156,7 @@ public partial class MultiplayerManager : Node
         }
         else if (state == WebSocketPeer.State.Closed)
         {
-            //GD.Print("WebSocket connection closed");
+            // Обработка закрытия соединения
         }
     }
 
@@ -171,6 +172,11 @@ public partial class MultiplayerManager : Node
     public bool IsHost()
     {
         return isHost;
+    }
+
+    public string GetRoomCode()
+    {
+        return currentRoomCode;
     }
 
     public WebSocketPeer GetWebSocketPeer()

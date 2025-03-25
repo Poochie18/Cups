@@ -22,6 +22,7 @@ public partial class SinglePlayerGame : Control
     private bool isBotThinking = false;
     private BotAI botAI;
     private int botDifficulty = 0;
+    private TextureRect[] tiles;
 
     private static readonly int[,] WinningCombinations = new int[,]
     {
@@ -41,74 +42,76 @@ public partial class SinglePlayerGame : Control
         GD.Print($"Режим игры установлен: {gameMode}, Сложность бота: {difficulty}");
     }
 
-    public override void _Ready()
+public override void _Ready()
+{
+    grid = GetNode<GridContainer>("Grid");
+    player1Table = GetNode<Control>("Player1TableContainer/Player1Table");
+    player2Table = GetNode<Control>("Player2TableContainer/Player2Table");
+    player1Label = GetNode<Label>("Player1TableContainer/Player1Label");
+    player2Label = GetNode<Label>("Player2TableContainer/Player2Label");
+    ui = GetNode<UI>("UI");
+
+    if (grid == null || player1Table == null || player2Table == null || 
+        player1Label == null || player2Label == null || ui == null)
     {
-        grid = GetNode<GridContainer>("Grid");
-        player1Table = GetNode<Control>("Player1TableContainer/Player1Table");
-        player2Table = GetNode<Control>("Player2TableContainer/Player2Table");
-        player1Label = GetNode<Label>("Player1TableContainer/Player1Label");
-        player2Label = GetNode<Label>("Player2TableContainer/Player2Label");
-        ui = GetNode<UI>("UI");
-
-        if (grid == null || player1Table == null || player2Table == null || 
-            player1Label == null || player2Label == null || ui == null)
-        {
-            GD.PrintErr("Ошибка: Один из узлов не найден!");
-            return;
-        }
-
-        var global = GetNode<Global>("/root/Global");
-        gameMode = global.GameMode;
-
-        if (gameMode == "bot")
-        {
-            SetGameMode("bot", global.BotDifficulty);
-            player1Label.Text = global.PlayerNickname;
-            player2Label.Text = "Bot";
-            GD.Print($"Bot mode: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
-        }
-        else
-        {
-            SetGameMode("friend");
-            player1Label.Text = global.PlayerNickname;
-            player2Label.Text = global.PlayerNickname + "_friend";
-            GD.Print($"Friend mode: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
-        }
-
-        grid.Columns = 3;
-        gridButtons = new Button[9];
-        for (int i = 0; i < 9; i++)
-        {
-            Button button = new Button
-            {
-                Name = "Button" + i,
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-                Disabled = true
-            };
-            button.AddThemeFontSizeOverride("font_size", CalculateFontSize());
-            grid.AddChild(button);
-            gridButtons[i] = button;
-        }
-
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-                board[i, j] = "";
-
-        // Определяем устройство и настраиваем расположение
-        SetupDeviceLayout();
-
-        CreateCircles(player1Table, "P1");
-        CreateCircles(player2Table, "P2");
-
-        string initialNickname = currentPlayer == "Player1" ? global.PlayerNickname : 
-                                (gameMode == "bot" ? "Bot" : global.PlayerNickname + "_friend");
-        ui.UpdateStatus($"Ход {initialNickname}");
-        GD.Print($"Initial status: Ход {initialNickname}");
-
-        ui.GetNode<Button>("RestartButton").Pressed += ui.OnRestartButtonPressed;
-        ui.GetNode<Button>("BackToMenuButton").Pressed += ui.OnMenuButtonPressed;
+        GD.PrintErr("Ошибка: Один из узлов не найден!");
+        return;
     }
+
+    var global = GetNode<Global>("/root/Global");
+    gameMode = global.GameMode;
+
+    if (gameMode == "bot")
+    {
+        SetGameMode("bot", global.BotDifficulty);
+        player1Label.Text = global.PlayerNickname;
+        player2Label.Text = "Bot";
+        GD.Print($"Bot mode: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
+    }
+    else
+    {
+        SetGameMode("friend");
+        player1Label.Text = global.PlayerNickname;
+        player2Label.Text = global.PlayerNickname + "_friend";
+        GD.Print($"Friend mode: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
+    }
+
+    // Создаём игровое поле
+    CreateGameField();
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            board[i, j] = "";
+
+    SetupDeviceLayout();
+
+    // Обновляем размеры кнопок и тайлов
+    float buttonSize = grid.Size.X / 3;
+    for (int i = 0; i < 9; i++)
+    {
+        gridButtons[i].CustomMinimumSize = new Vector2(buttonSize, buttonSize);
+        gridButtons[i].Size = new Vector2(buttonSize, buttonSize);
+        GD.Print($"Updated Button{i} Size to: {gridButtons[i].Size}");
+
+        if (tiles[i] != null)
+        {
+            tiles[i].Position = new Vector2(0, 0);
+            tiles[i].Size = gridButtons[i].Size;
+            GD.Print($"Updated Tile{i} Size to: {tiles[i].Size}, Position: {tiles[i].Position}");
+        }
+    }
+
+    CreateCircles(player1Table, "P1");
+    CreateCircles(player2Table, "P2");
+
+    string initialNickname = currentPlayer == "Player1" ? global.PlayerNickname : 
+                            (gameMode == "bot" ? "Bot" : global.PlayerNickname + "_friend");
+    ui.UpdateStatus($"Ход {initialNickname}");
+    GD.Print($"Initial status: Ход {initialNickname}");
+
+    ui.GetNode<Button>("RestartButton").Pressed += ui.OnRestartButtonPressed;
+    ui.GetNode<Button>("BackToMenuButton").Pressed += ui.OnMenuButtonPressed;
+}
 
     private void SetupDeviceLayout()
 {
@@ -120,25 +123,7 @@ public partial class SinglePlayerGame : Control
         // Портретный режим для смартфона (занимаемся позже)
         DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
         DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
-
-        ui.Position = new Vector2((screenSize.X - ui.Size.X) / 2, 20);
-        GD.Print($"UI Position: {ui.Position}, Size: {ui.Size}");
-
-        var player1TableContainer = GetNode<Control>("Player1TableContainer");
-        player1TableContainer.Position = new Vector2((screenSize.X - player1TableContainer.Size.X) / 2, ui.Position.Y + ui.Size.Y + 20);
-        player1Label.Position = new Vector2((player1TableContainer.Size.X - player1Label.Size.X) / 2, 0);
-        player1Table.Position = new Vector2((player1TableContainer.Size.X - player1Table.Size.X) / 2, player1Label.Size.Y + 10);
-        GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
-
-        grid.Position = new Vector2(20, player1TableContainer.Position.Y + player1TableContainer.Size.Y + 20);
-        grid.Size = new Vector2(screenSize.X - 40, screenSize.X - 40);
-        GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
-
-        var player2TableContainer = GetNode<Control>("Player2TableContainer");
-        player2TableContainer.Position = new Vector2((screenSize.X - player2TableContainer.Size.X) / 2, grid.Position.Y + grid.Size.Y + 20);
-        player2Label.Position = new Vector2((player2TableContainer.Size.X - player2Label.Size.X) / 2, 0);
-        player2Table.Position = new Vector2((player2TableContainer.Size.X - player2Table.Size.X) / 2, player2Label.Size.Y + 10);
-        GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
+        GD.Print("Mobile layout setup will be implemented later.");
     }
     else
     {
@@ -148,36 +133,9 @@ public partial class SinglePlayerGame : Control
         screenSize = new Vector2(1280, 720);
         GD.Print($"Screen Size: {screenSize}");
 
-        // UI сверху
-        ui.Size = new Vector2(screenSize.X, 100);
-        ui.Position = new Vector2(0, 0);
-        ui.Visible = true;
-
-        // Настройка дочерних элементов UI
-        var restartButton = ui.GetNode<Button>("RestartButton");
-        var statusLabel = ui.GetNode<Label>("StatusLabel");
-        var backToMenuButton = ui.GetNode<Button>("BackToMenuButton");
-
-        restartButton.Size = new Vector2(150, 50);
-        restartButton.Position = new Vector2(20, 25);
-        restartButton.Visible = true;
-
-        statusLabel.Size = new Vector2(300, 50);
-        statusLabel.Position = new Vector2((screenSize.X - statusLabel.Size.X) / 2, 25);
-        statusLabel.Visible = true;
-
-        backToMenuButton.Size = new Vector2(150, 50);
-        backToMenuButton.Position = new Vector2(screenSize.X - backToMenuButton.Size.X - 20, 25);
-        backToMenuButton.Visible = true;
-
-        GD.Print($"UI Position: {ui.Position}, Size: {ui.Size}");
-        GD.Print($"RestartButton Position: {restartButton.Position}, Size: {restartButton.Size}");
-        GD.Print($"StatusLabel Position: {statusLabel.Position}, Size: {statusLabel.Size}");
-        GD.Print($"BackToMenuButton Position: {backToMenuButton.Position}, Size: {backToMenuButton.Size}");
-
         // Grid по центру
         float gridSize = 500;
-        grid.Position = new Vector2((screenSize.X - gridSize) / 2, ui.Size.Y + 20);
+        grid.Position = new Vector2((screenSize.X - gridSize) / 2, 120);
         grid.Size = new Vector2(gridSize, gridSize);
         grid.Visible = true;
         GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
@@ -186,29 +144,39 @@ public partial class SinglePlayerGame : Control
         var player1TableContainer = GetNode<Control>("Player1TableContainer");
         float player1TableWidth = (screenSize.X - gridSize) / 2 - 40;
         float player1TableHeight = gridSize;
-        player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + 20, ui.Size.Y + 20);
+        player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + 20, 160);
         player1TableContainer.Size = new Vector2(player1TableWidth, player1TableHeight);
         player1TableContainer.Visible = true;
-        player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, 0);
-        player1Table.Position = new Vector2(0, player1Label.Size.Y + 10);
+
+        // Player1Table занимает верхнюю часть контейнера
+        player1Table.Position = new Vector2(0, 0);
         player1Table.Size = new Vector2(player1TableWidth, player1TableHeight - player1Label.Size.Y - 10);
         player1Table.Visible = true;
+
+        // Player1Label размещаем под Player1Table
+        player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
         GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
         GD.Print($"Player1Table Position: {player1Table.Position}, Size: {player1Table.Size}");
+        GD.Print($"Player1Label Position: {player1Label.Position}, Size: {player1Label.Size}");
 
         // Player2TableContainer слева
         var player2TableContainer = GetNode<Control>("Player2TableContainer");
         float player2TableWidth = (screenSize.X - gridSize) / 2 - 40;
         float player2TableHeight = gridSize;
-        player2TableContainer.Position = new Vector2(20, ui.Size.Y + 20);
+        player2TableContainer.Position = new Vector2(20, 160);
         player2TableContainer.Size = new Vector2(player2TableWidth, player2TableHeight);
         player2TableContainer.Visible = true;
-        player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, 0);
-        player2Table.Position = new Vector2(0, player2Label.Size.Y + 10);
+
+        // Player2Table занимает верхнюю часть контейнера
+        player2Table.Position = new Vector2(0, 0);
         player2Table.Size = new Vector2(player2TableWidth, player2TableHeight - player2Label.Size.Y - 10);
         player2Table.Visible = true;
+
+        // Player2Label размещаем под Player2Table
+        player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
         GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
         GD.Print($"Player2Table Position: {player2Table.Position}, Size: {player2Table.Size}");
+        GD.Print($"Player2Label Position: {player2Label.Position}, Size: {player2Label.Size}");
     }
 }
     public override void _Input(InputEvent @event)
@@ -539,24 +507,91 @@ public partial class SinglePlayerGame : Control
         }
     }
 
+
+
+private void CreateGameField()
+{
+    grid.Columns = 3;
+    gridButtons = new Button[9];
+    tiles = new TextureRect[9];
+
+    // Устанавливаем прозрачный стиль для GridContainer, чтобы убрать серый фон
+    StyleBoxFlat gridStyle = new StyleBoxFlat
+    {
+        BgColor = new Color(0, 0, 0, 0) // Прозрачный фон
+    };
+    grid.AddThemeStyleboxOverride("panel", gridStyle);
+    grid.Modulate = new Color(1, 1, 1, 1);
+
+    Texture2D tileTexture = GD.Load<Texture2D>("res://Sprites/grass_tile_no_bg.png");
+    GD.Print($"Attempting to load tile texture: res://Sprites/grass_tile_no_bg.png, Result: {tileTexture != null}");
+    if (tileTexture == null)
+    {
+        GD.PrintErr("Не удалось загрузить текстуру для тайла: res://Sprites/grass_tile_no_bg.png");
+    }
+
+    for (int i = 0; i < 9; i++)
+    {
+        Button button = new Button
+        {
+            Name = "Button" + i,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+            Disabled = true,
+            Visible = true,
+            Flat = true
+        };
+        button.AddThemeFontSizeOverride("font_size", CalculateFontSize());
+
+        // Создаём StyleBoxEmpty для состояния normal
+        StyleBoxEmpty emptyStyle = new StyleBoxEmpty();
+
+        // Устанавливаем стиль только для состояния normal
+        button.AddThemeStyleboxOverride("normal", emptyStyle);
+
+        // Делаем кнопку прозрачной
+        button.Modulate = new Color(1, 1, 1, 1);
+
+        if (tileTexture != null)
+        {
+            TextureRect tile = new TextureRect
+            {
+                Name = "Tile" + i,
+                Texture = tileTexture,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspect, // Изменено
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                Visible = true
+            };
+            button.AddChild(tile);
+            tiles[i] = tile;
+            GD.Print($"Created Tile{i}, Initial Size: {tile.Size}");
+        }
+
+        grid.AddChild(button);
+        gridButtons[i] = button;
+        GD.Print($"Added Button{i} to Grid, Button Visible: {button.Visible}, Grid Size: {grid.Size}");
+    }
+}
     private void CreateCircles(Control table, string playerPrefix)
 {
-    Texture2D texture = GD.Load<Texture2D>("res://Sprites/icon.svg") ?? GD.Load<Texture2D>("res://icon.png");
+    string texturePath = playerPrefix == "P1" ? "res://Sprites/red.png" : "res://Sprites/blue.png";
+    Texture2D texture = GD.Load<Texture2D>(texturePath);
+    GD.Print($"Attempting to load circle texture: {texturePath}, Result: {texture != null}");
     if (texture == null)
     {
-        GD.PrintErr("Не удалось загрузить текстуру для кругляшек!");
+        GD.PrintErr($"Не удалось загрузить текстуру: {texturePath}");
         return;
     }
 
-    // Получаем размеры PlayerTable
     float tableWidth = table.Size.X;
     float tableHeight = table.Size.Y;
     GD.Print($"{table.Name} Width: {tableWidth}, Height: {tableHeight}");
 
-    // Определяем устройство
     bool isMobile = OS.GetName() == "Android" || OS.GetName() == "iOS";
 
-    // Базовый размер кругляшка (Large) зависит от устройства
     float baseSize;
     if (isMobile)
     {
@@ -564,48 +599,44 @@ public partial class SinglePlayerGame : Control
     }
     else
     {
-        // Ограничиваем размер по ширине (2 кругляшка в ряду) и высоте (3 ряда)
-        float maxWidth = (tableWidth / 2) * 0.9f; // 90% от ширины столбца
-        float maxHeight = (tableHeight / 3) * 0.9f; // 90% от высоты ряда
-        baseSize = Mathf.Min(maxWidth, maxHeight); // Выбираем меньшее значение
+        float maxWidth = (tableWidth / 2) * 0.9f;
+        float maxHeight = (tableHeight / 3) * 0.9f;
+        baseSize = Mathf.Min(maxWidth, maxHeight);
     }
 
+    // Увеличиваем размеры кругляшков
     Vector2[] sizes = 
     {
-        new Vector2(baseSize * 0.5f, baseSize * 0.5f), // Small
-        new Vector2(baseSize * 0.75f, baseSize * 0.75f), // Medium
+        new Vector2(baseSize * 0.7f, baseSize * 0.7f), // Small
+        new Vector2(baseSize * 0.85f, baseSize * 0.85f), // Medium
         new Vector2(baseSize, baseSize) // Large
     };
     string[] sizeNames = { "Small", "Medium", "Large" };
 
-    // Уменьшаем расстояние между кругляшками
-    float spacingX = (tableWidth - (sizes[0].X * 2)) / 3; // 3 промежутка (слева, между кругляшками, справа)
-    float spacingY = (tableHeight - (sizes[0].Y + sizes[1].Y + sizes[2].Y)) / 4; // 4 промежутка (сверху, между рядами, снизу)
-    spacingX = Mathf.Min(spacingX, 10f); // Ограничиваем максимальный отступ по горизонтали
-    spacingY = Mathf.Min(spacingY, 10f); // Ограничиваем максимальный отступ по вертикали
-    if (spacingX < 2f) spacingX = 2f; // Минимальный отступ
+    float spacingX = (tableWidth - (sizes[0].X * 2)) / 3;
+    float spacingY = (tableHeight - (sizes[0].Y + sizes[1].Y + sizes[2].Y)) / 4;
+    spacingX = Mathf.Min(spacingX, 10f);
+    spacingY = Mathf.Min(spacingY, 10f);
+    if (spacingX < 2f) spacingX = 2f;
     if (spacingY < 2f) spacingY = 2f;
 
-    // Позиции для каждого ряда
     float currentY = spacingY;
     for (int row = 0; row < 3; row++)
     {
-        int sizeIdx = row; // Small в первом ряду, Medium во втором, Large в третьем
-        // Центрируем кругляшки по горизонтали относительно их столбца
-        float columnWidth = tableWidth / 2; // Делим стол на 2 столбца
-        float leftCircleX = (columnWidth - sizes[sizeIdx].X) / 2; // Центрируем в первом столбце
-        float rightCircleX = columnWidth + (columnWidth - sizes[sizeIdx].X) / 2; // Центрируем во втором столбце
+        int sizeIdx = row;
+        float columnWidth = tableWidth / 2;
+        float leftCircleX = (columnWidth - sizes[sizeIdx].X) / 2;
+        float rightCircleX = columnWidth + (columnWidth - sizes[sizeIdx].X) / 2;
 
-        // Первый кругляш в ряду (левый столбец)
         TextureRect circle1 = new TextureRect
         {
             Name = $"{playerPrefix}_{sizeNames[sizeIdx]}Circle1",
             Texture = texture,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.Scale,
             Size = sizes[sizeIdx],
             Position = new Vector2(leftCircleX, currentY),
             MouseFilter = Control.MouseFilterEnum.Stop,
-            Modulate = playerPrefix == "P1" ? new Color(1, 0, 0) : new Color(0, 0, 1),
             Visible = true
         };
         table.AddChild(circle1);
@@ -613,16 +644,15 @@ public partial class SinglePlayerGame : Control
         initialParents[circle1.Name] = table;
         GD.Print($"Created {circle1.Name} at {circle1.Position}, size: {circle1.Size}, Visible: {circle1.Visible}");
 
-        // Второй кругляш в ряду (правый столбец)
         TextureRect circle2 = new TextureRect
         {
             Name = $"{playerPrefix}_{sizeNames[sizeIdx]}Circle2",
             Texture = texture,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.Scale,
             Size = sizes[sizeIdx],
             Position = new Vector2(rightCircleX, currentY),
             MouseFilter = Control.MouseFilterEnum.Stop,
-            Modulate = playerPrefix == "P1" ? new Color(1, 0, 0) : new Color(0, 0, 1),
             Visible = true
         };
         table.AddChild(circle2);

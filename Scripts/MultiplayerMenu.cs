@@ -20,12 +20,7 @@ public partial class MultiplayerMenu : Control
         roomCodeLabel = GetNode<Label>("Frame/MultiplayerOptions/RoomCodeLabel");
         multiplayerManager = GetNode<MultiplayerManager>("/root/MultiplayerManager");
 
-        if (multiplayerOptions == null || createRoomButton == null || roomCodeInput == null || 
-            joinRoomButton == null || backButton == null || roomCodeLabel == null || multiplayerManager == null)
-        {
-            GD.PrintErr("Ошибка: Не найдены узлы в MultiplayerMenu!");
-            return;
-        }
+        if (!ValidateNodes()) return;
 
         roomCodeLabel.MaxLinesVisible = 1;
         roomCodeLabel.ClipText = true;
@@ -42,46 +37,72 @@ public partial class MultiplayerMenu : Control
         backButton.Pressed += OnBackButtonPressed;
         multiplayerManager.Connect("RoomCreated", Callable.From((string code) => OnRoomCreated(code)));
         multiplayerManager.Connect("PlayerConnected", Callable.From(OnPlayerConnected));
+    }
 
-        GD.Print("MultiplayerMenu initialized");
+    private bool ValidateNodes()
+    {
+        if (multiplayerOptions == null || createRoomButton == null || roomCodeInput == null || 
+            joinRoomButton == null || backButton == null || roomCodeLabel == null || multiplayerManager == null)
+        {
+            GD.PrintErr("Ошибка: Не найдены узлы в MultiplayerMenu!");
+            return false;
+        }
+        return true;
     }
 
     private void OnCreateRoomButtonPressed()
     {
-        GD.Print("Create Room button pressed!");
-        multiplayerManager.CreateRoom(); // Просто вызываем метод, код придёт через сигнал
-        roomCodeLabel.Text = "Creating room..."; // Временный текст до получения кода
+        multiplayerManager.CreateRoom();
+        roomCodeLabel.Text = "Creating room...";
+        roomCodeLabel.Modulate = new Color(1, 1, 1);
     }
 
     private void OnRoomCreated(string code)
     {
-        GD.Print($"Room created: {code}");
         roomCodeLabel.Text = $"Room Code: {code} (Waiting...)";
+        roomCodeLabel.Modulate = new Color(1, 1, 1);
     }
 
     private void OnJoinRoomButtonPressed()
     {
-        string roomCode = roomCodeInput.Text.Trim();
+        string roomCode = roomCodeInput.Text.Trim().ToUpper();
         if (string.IsNullOrEmpty(roomCode))
         {
-            GD.Print("Ошибка: Введите код комнаты!");
             roomCodeLabel.Text = "Enter a room code!";
+            roomCodeLabel.Modulate = new Color(1, 0, 0);
             return;
         }
-        GD.Print($"Join Room button pressed! Room code: {roomCode}");
+
+        if (multiplayerManager.IsHost())
+        {
+            string currentRoomCode = multiplayerManager.GetRoomCode();
+            if (string.IsNullOrEmpty(currentRoomCode))
+            {
+                roomCodeLabel.Text = "Room not created yet!";
+                roomCodeLabel.Modulate = new Color(1, 0, 0);
+                return;
+            }
+
+            if (roomCode == currentRoomCode)
+            {
+                roomCodeLabel.Text = "Вы не можете присоединиться к своей комнате!";
+                roomCodeLabel.Modulate = new Color(1, 0, 0);
+                return;
+            }
+        }
+
         multiplayerManager.JoinRoom(roomCode);
         roomCodeLabel.Text = "Connecting...";
+        roomCodeLabel.Modulate = new Color(1, 1, 1);
     }
 
     private void OnPlayerConnected()
     {
-        GD.Print("Игрок подключен, ожидаем перехода в игру");
-        QueueFree(); // Удаляем меню
+        QueueFree();
     }
 
     private void OnBackButtonPressed()
     {
-        GD.Print("Back button pressed!");
         multiplayerManager.Cleanup();
         GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
         QueueFree();

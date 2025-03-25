@@ -57,8 +57,8 @@ public partial class UI : Control
         {
             if (game.gameMode == "multiplayer")
             {
-                GD.Print("Calling RpcId for SyncResetGame");
-                game.RpcId(0, nameof(game.SyncResetGame));
+                GD.Print("Calling SyncResetGame for multiplayer");
+                game.OnRestartButtonPressed(); // Вызываем метод OnRestartButtonPressed, который уже обрабатывает мультиплеер
             }
             else
             {
