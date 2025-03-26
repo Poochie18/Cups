@@ -12,12 +12,12 @@ public partial class Menu : Control
     public override void _Ready()
     {
         // Инициализация узлов
-        mainMenuContainer = GetNode<VBoxContainer>("Frame/MainMenu");
-        playVsFriendButton = GetNode<Button>("Frame/MainMenu/PlayVsFriendButton");
-        playVsBotButton = GetNode<Button>("Frame/MainMenu/PlayVsBotButton");
-        multiplayerButton = GetNode<Button>("Frame/MainMenu/MultiplayerButton");
-        settingsButton = GetNode<Button>("Frame/MainMenu/SettingsButton");
-        exitButton = GetNode<Button>("Frame/MainMenu/ExitButton");
+        mainMenuContainer = GetNode<VBoxContainer>("MainMenu");
+        playVsFriendButton = GetNode<Button>("MainMenu/PlayVsFriendButton");
+        playVsBotButton = GetNode<Button>("MainMenu/PlayVsBotButton");
+        multiplayerButton = GetNode<Button>("MainMenu/MultiplayerButton");
+        settingsButton = GetNode<Button>("MainMenu/SettingsButton");
+        exitButton = GetNode<Button>("MainMenu/ExitButton");
 
         if (mainMenuContainer == null || playVsFriendButton == null || 
             playVsBotButton == null || multiplayerButton == null || 
@@ -34,7 +34,7 @@ public partial class Menu : Control
             {
                 btn.SizeFlagsHorizontal = SizeFlags.ExpandFill;
                 btn.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-                btn.AddThemeFontSizeOverride("font_size", CalculateFontSize());
+                //btn.AddThemeFontSizeOverride("font_size", CalculateFontSize());
             }
         }
 

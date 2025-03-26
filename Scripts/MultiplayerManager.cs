@@ -4,7 +4,7 @@ using System;
 public partial class MultiplayerManager : Node
 {
     private WebSocketPeer wsPeer;
-    private const string ServerUrl = "wss://tic-tac-toe-server-b4ms.onrender.com";
+    private const string ServerUrl = "wss://tic-tac-toe-server-new.onrender.com/create";
     private string currentRoomCode = "";
     private bool isHost = false;
 

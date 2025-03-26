@@ -1,85 +1,133 @@
-[gd_scene load_steps=3 format=3 uid="uid://c11nd81r0mrio"]
+[gd_scene load_steps=6 format=3 uid="uid://c11nd81r0mrio"]
 
 [ext_resource type="Script" uid="uid://dcvhtihk0kmfh" path="res://Scripts/Menu.cs" id="1_usfse"]
-[ext_resource type="Texture2D" uid="uid://kxeofgbhwhye" path="res://Sprites/Button.png" id="2_6pedr"]
+[ext_resource type="FontFile" uid="uid://dlfyxagh4vdlv" path="res://Sprites/Roboto-Regular.ttf" id="2_syfuq"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6pedr"]
+bg_color = Color(0.115599, 0.487753, 0.860815, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 8
+shadow_offset = Vector2(4, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_syfuq"]
+bg_color = Color(0.0847176, 0.44017, 0.788368, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 8
+shadow_offset = Vector2(4, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s2c3o"]
+bg_color = Color(0.0980392, 0.462745, 0.823529, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 8
+shadow_offset = Vector2(4, 4)
 
 [node name="Menu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 2.0
-offset_bottom = -1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_usfse")
 
-[node name="Frame" type="MarginContainer" parent="."]
+[node name="BackGround" type="ColorRect" parent="."]
+z_index = -1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.969137, 0.969137, 0.969137, 1)
+
+[node name="MainMenu" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(300, 0)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -249.0
-offset_top = -395.0
-offset_right = 249.0
-offset_bottom = 395.0
+offset_left = -150.0
+offset_top = -321.0
+offset_right = 150.0
+offset_bottom = 321.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 25
-theme_override_constants/margin_top = 25
-theme_override_constants/margin_right = 25
-theme_override_constants/margin_bottom = 25
-
-[node name="MainMenu" type="VBoxContainer" parent="Frame"]
-layout_mode = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = 25
 alignment = 1
 
-[node name="PlayVsFriendButton" type="Button" parent="Frame/MainMenu"]
+[node name="PlayVsFriendButton" type="Button" parent="MainMenu"]
+custom_minimum_size = Vector2(250, 50)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_syfuq")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
+text = "Play vs Friend"
+icon_alignment = 1
+
+[node name="PlayVsBotButton" type="Button" parent="MainMenu"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_vertical = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_syfuq")
 theme_override_font_sizes/font_size = 28
-text = "VS Friend"
-flat = true
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
+text = "Play vs Bot"
 icon_alignment = 1
 
-[node name="PlayVsBotButton" type="Button" parent="Frame/MainMenu"]
-custom_minimum_size = Vector2(200, 60)
+[node name="MultiplayerButton" type="Button" parent="MainMenu"]
+custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "VS Bot"
-icon = ExtResource("2_6pedr")
-flat = true
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_syfuq")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
+text = "Multiplayer"
 icon_alignment = 1
 
-[node name="MultiplayerButton" type="Button" parent="Frame/MainMenu"]
-custom_minimum_size = Vector2(200, 60)
+[node name="SettingsButton" type="Button" parent="MainMenu"]
+custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "Online
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_syfuq")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
+text = "Settings"
+icon_alignment = 1
+
+[node name="ExitButton" type="Button" parent="MainMenu"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_syfuq")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
+text = "Exit
 "
-icon = ExtResource("2_6pedr")
-flat = true
-icon_alignment = 1
-
-[node name="SettingsButton" type="Button" parent="Frame/MainMenu"]
-custom_minimum_size = Vector2(200, 60)
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "Settings
-"
-icon = ExtResource("2_6pedr")
-flat = true
-icon_alignment = 1
-
-[node name="ExitButton" type="Button" parent="Frame/MainMenu"]
-custom_minimum_size = Vector2(200, 60)
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "Exit"
-icon = ExtResource("2_6pedr")
-flat = true
 icon_alignment = 1

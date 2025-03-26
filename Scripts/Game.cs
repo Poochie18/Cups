@@ -82,11 +82,6 @@ public override void _Ready()
         ui.UpdateStatus($"Ход {global.PlayerNickname}");
         SendMessage($"sync_labels:{global.PlayerNickname}");
         SendMessage($"sync_current_player:{currentPlayer}");
-
-        float player1TableWidth = player1Table.Size.X;
-        float player2TableWidth = player2Table.Size.X;
-        player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
-        player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
     }
     else
     {
@@ -94,15 +89,6 @@ public override void _Ready()
         player1Label.Text = global.PlayerNickname; // Ник клиента справа (после зеркалирования)
         player2Label.Text = global.OpponentNickname; // Ник хоста слева (после зеркалирования)
         ui.UpdateStatus($"Ход {global.OpponentNickname}");
-        (player1Table.Position, player2Table.Position) = (player2Table.Position, player1Table.Position);
-        UpdateCirclePositions(player1Table);
-        UpdateCirclePositions(player2Table);
-
-        float player1TableWidth = player1Table.Size.X;
-        float player2TableWidth = player2Table.Size.X;
-        player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
-        player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
-
         SendMessage($"sync_labels:{global.PlayerNickname}");
     }
 
@@ -132,41 +118,84 @@ public override void _Ready()
         return true;
     }
 
-    private void SetupDeviceLayout()
+private void SetupDeviceLayout()
+{
+    bool isMobile = OS.GetName() == "Android" || OS.GetName() == "iOS";
+    Vector2 screenSize = GetViewport().GetVisibleRect().Size;
+
+    if (isMobile)
     {
-        bool isMobile = OS.GetName() == "Android" || OS.GetName() == "iOS";
-        Vector2 screenSize = GetViewport().GetVisibleRect().Size;
+        // Портретный режим для смартфона (занимаемся позже)
+        DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
+        DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
+        GD.Print("Mobile layout setup will be implemented later.");
+    }
+    else
+    {
+        // Горизонтальный режим для ПК (16:9, 1280x720)
+        DisplayServer.WindowSetSize(new Vector2I(1280, 720));
+        DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+        screenSize = new Vector2(1280, 720);
+        GD.Print($"Screen Size: {screenSize}");
 
-        if (isMobile)
+        // Grid по центру
+        float gridSize = 500;
+        grid.Position = new Vector2((screenSize.X - gridSize) / 2, 120);
+        grid.Size = new Vector2(gridSize, gridSize);
+        grid.Visible = true;
+        GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
+
+        // Player1TableContainer справа (для хоста — это его стол)
+        var player1TableContainer = GetNode<Control>("Player1TableContainer");
+        float player1TableWidth = (screenSize.X - gridSize) / 2 - 40;
+        float player1TableHeight = gridSize;
+        player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + 20, 160);
+        player1TableContainer.Size = new Vector2(player1TableWidth, player1TableHeight);
+        player1TableContainer.Visible = true;
+
+        // Player1Table занимает верхнюю часть контейнера
+        player1Table.Position = new Vector2(0, 0);
+        player1Table.Size = new Vector2(player1TableWidth, player1TableHeight - player1Label.Size.Y - 10);
+        player1Table.Visible = true;
+
+        // Player1Label размещаем под Player1Table
+        player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
+        GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
+        GD.Print($"Player1Table Position: {player1Table.Position}, Size: {player1Table.Size}");
+        GD.Print($"Player1Label Position: {player1Label.Position}, Size: {player1Label.Size}");
+
+        // Player2TableContainer слева (для хоста — это стол оппонента)
+        var player2TableContainer = GetNode<Control>("Player2TableContainer");
+        float player2TableWidth = (screenSize.X - gridSize) / 2 - 40;
+        float player2TableHeight = gridSize;
+        player2TableContainer.Position = new Vector2(20, 160);
+        player2TableContainer.Size = new Vector2(player2TableWidth, player2TableHeight);
+        player2TableContainer.Visible = true;
+
+        // Player2Table занимает верхнюю часть контейнера
+        player2Table.Position = new Vector2(0, 0);
+        player2Table.Size = new Vector2(player2TableWidth, player2TableHeight - player2Label.Size.Y - 10);
+        player2Table.Visible = true;
+
+        // Player2Label размещаем под Player2Table
+        player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
+        GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
+        GD.Print($"Player2Table Position: {player2Table.Position}, Size: {player2Table.Size}");
+        GD.Print($"Player2Label Position: {player2Label.Position}, Size: {player2Label.Size}");
+
+        // Для клиента зеркалим столы
+        if (!multiplayerManager.IsHost())
         {
-            DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
-            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
-        }
-        else
-        {
-            DisplayServer.WindowSetSize(new Vector2I(1280, 720));
-            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
-            screenSize = new Vector2(1280, 720);
+            (player1TableContainer.Position, player2TableContainer.Position) = (player2TableContainer.Position, player1TableContainer.Position);
+            UpdateCirclePositions(player1Table);
+            UpdateCirclePositions(player2Table);
 
-            float gridSize = 500;
-            grid.Position = new Vector2((screenSize.X - gridSize) / 2, 120);
-            grid.Size = new Vector2(gridSize, gridSize);
-            grid.Visible = true;
-
-            float tableWidth = (screenSize.X - gridSize) / 2 - 40;
-            float tableHeight = gridSize;
-            player1Table.Position = new Vector2(grid.Position.X + gridSize + 20, 160);
-            player1Table.Size = new Vector2(tableWidth, tableHeight);
-            player1Table.Visible = true;
-
-            player2Table.Position = new Vector2(20, 160);
-            player2Table.Size = new Vector2(tableWidth, tableHeight);
-            player2Table.Visible = true;
-
-            player1Label.Position = new Vector2((tableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
-            player2Label.Position = new Vector2((tableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
+            // Обновляем позиции меток после зеркалирования
+            player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
+            player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
         }
     }
+}
 
     private void CreateGameField()
     {
@@ -725,7 +754,7 @@ public override void _Ready()
     {
         var global = GetNode<Global>("/root/Global");
         SendMessage($"player_left:{global.PlayerNickname}");
-        GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn");
+        GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
     }
 
     private int CalculateFontSize()
@@ -750,6 +779,9 @@ public override void _Ready()
 
     CreateCircles(player1Table, "P1");
     CreateCircles(player2Table, "P2");
+
+    // Пересчитываем расположение столов и меток
+    SetupDeviceLayout();
 
     var global = GetNode<Global>("/root/Global");
     if (multiplayerManager.IsHost())

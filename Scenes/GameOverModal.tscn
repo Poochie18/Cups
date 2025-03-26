@@ -1,9 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://xgwyf5lsfkt6"]
+[gd_scene load_steps=4 format=3 uid="uid://xgwyf5lsfkt6"]
 
 [ext_resource type="Script" uid="uid://wev6w43kflyi" path="res://Scripts/GameOverModal.cs" id="1_stl7u"]
+[ext_resource type="Texture2D" uid="uid://4pnmkp5qavlw" path="res://Sprites/home_no_bg.png" id="2_xh4na"]
+[ext_resource type="Texture2D" uid="uid://d0bovxd8udy0l" path="res://Sprites/restart_no_bg.png" id="3_cpxpv"]
 
 [node name="GameOverModal" type="Control" node_paths=PackedStringArray("ResultLabel", "InstructionLabel", "MenuButton", "RestartButton")]
-visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,7 +20,7 @@ MenuButton = NodePath("Panel/MenuButton")
 RestartButton = NodePath("Panel/RestartButton")
 
 [node name="Panel" type="Panel" parent="."]
-self_modulate = Color(0.414648, 0.585808, 1, 1)
+self_modulate = Color(0, 0, 0, 1)
 custom_minimum_size = Vector2(500, 350)
 layout_mode = 1
 anchors_preset = 8
@@ -66,12 +67,14 @@ layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 100.0
+offset_left = 312.0
 offset_top = -150.0
-offset_right = 153.0
-offset_bottom = -119.0
+offset_right = 716.0
+offset_bottom = 286.0
 grow_vertical = 0
-text = "Menu"
+scale = Vector2(0.2, 0.2)
+icon = ExtResource("2_xh4na")
+flat = true
 
 [node name="RestartButton" type="Button" parent="Panel"]
 layout_mode = 1
@@ -80,10 +83,12 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -150.0
+offset_left = -377.0
 offset_top = -150.0
-offset_right = -85.0
-offset_bottom = -119.0
+offset_right = 27.0
+offset_bottom = 289.0
 grow_horizontal = 0
 grow_vertical = 0
-text = "Restart"
+scale = Vector2(0.2, 0.2)
+icon = ExtResource("3_cpxpv")
+flat = true

@@ -19,6 +19,7 @@ config/icon="res://Sprites/icon.svg"
 
 MultiplayerManager="*res://Scripts/MultiplayerManager.cs"
 Global="*res://Scripts/Global.cs"
+GlobalButtonHoverEffect="*res://Scripts/GlobalButtonHoverEffect.cs"
 
 [display]
 
@@ -30,6 +31,10 @@ window/handheld/orientation=5
 [dotnet]
 
 project/assembly_name="tic-tac-toe"
+
+[gui]
+
+theme/custom_font="uid://dlfyxagh4vdlv"
 
 [rendering]
 

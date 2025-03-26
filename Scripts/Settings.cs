@@ -7,8 +7,8 @@ public partial class Settings : Control
 
     public override void _Ready()
     {
-        backButton = GetNode<Button>("Frame/SettingsContainer/BackButton");
-        nicknameInput = GetNode<LineEdit>("Frame/SettingsContainer/NicknameInput");
+        backButton = GetNode<Button>("SettingsContainer/BackButton");
+        nicknameInput = GetNode<LineEdit>("SettingsContainer/NicknameInput");
 
         if (backButton == null || nicknameInput == null)
         {
@@ -20,7 +20,11 @@ public partial class Settings : Control
         var global = GetNode<Global>("/root/Global");
         nicknameInput.Text = string.IsNullOrEmpty(global.PlayerNickname) ? "Player" : global.PlayerNickname;
 
-        backButton.Pressed += OnBackButtonPressed;
+        backButton.Pressed += () =>
+        {
+            GD.Print("BackButton pressed");
+            OnBackButtonPressed();
+        };
         GD.Print("Settings scene initialized");
     }
 
@@ -29,7 +33,7 @@ public partial class Settings : Control
         GD.Print("Back button pressed!");
         var global = GetNode<Global>("/root/Global");
         global.PlayerNickname = nicknameInput.Text;
-        global.SaveSettings(); // Сохраняем настройки
+        global.SaveSettings();
         LoadScene("res://Scenes/Menu.tscn");
     }
 

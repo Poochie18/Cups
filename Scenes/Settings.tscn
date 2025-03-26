@@ -1,6 +1,52 @@
-[gd_scene load_steps=2 format=3 uid="uid://cbbr75ybuy0k0"]
+[gd_scene load_steps=8 format=3 uid="uid://cbbr75ybuy0k0"]
 
 [ext_resource type="Script" uid="uid://d1dy2kvk307nl" path="res://Scripts/Settings.cs" id="1_4hxq3"]
+[ext_resource type="FontFile" uid="uid://dlfyxagh4vdlv" path="res://Sprites/Roboto-Regular.ttf" id="2_flfri"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yrknh"]
+bg_color = Color(0.0980392, 0.462745, 0.823529, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 4
+shadow_offset = Vector2(2, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wj2gv"]
+bg_color = Color(0.0980392, 0.462745, 0.823529, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 4
+shadow_offset = Vector2(2, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6pedr"]
+bg_color = Color(0.115599, 0.487753, 0.860815, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 8
+shadow_offset = Vector2(4, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_syfuq"]
+bg_color = Color(0.0847176, 0.44017, 0.788368, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 8
+shadow_offset = Vector2(4, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s2c3o"]
+bg_color = Color(0.0980392, 0.462745, 0.823529, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 8
+shadow_offset = Vector2(4, 4)
 
 [node name="Control" type="Control"]
 layout_mode = 3
@@ -11,52 +57,69 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_4hxq3")
 
-[node name="Frame" type="MarginContainer" parent="."]
+[node name="BackGround" type="ColorRect" parent="."]
+z_index = -4
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.969137, 0.969137, 0.969137, 1)
+
+[node name="SettingsLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -175.0
+offset_top = 75.0
+offset_right = 175.0
+offset_bottom = 150.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("2_flfri")
+theme_override_font_sizes/font_size = 48
+theme_override_styles/normal = SubResource("StyleBoxFlat_yrknh")
+text = "Settings"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SettingsContainer" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -354.0
-offset_top = -300.5
-offset_right = 354.0
-offset_bottom = 300.5
+offset_left = -150.0
+offset_top = -150.0
+offset_right = 150.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 100
-theme_override_constants/margin_top = 100
-theme_override_constants/margin_right = 100
-theme_override_constants/margin_bottom = 100
-
-[node name="SettingsContainer" type="VBoxContainer" parent="Frame"]
-layout_mode = 2
-theme_override_constants/separation = 40
+theme_override_constants/separation = 25
 alignment = 1
 
-[node name="NicknameInput" type="LineEdit" parent="Frame/SettingsContainer"]
+[node name="NicknameInput" type="LineEdit" parent="SettingsContainer"]
+z_index = 1
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_fonts/font = ExtResource("2_flfri")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_wj2gv")
 text = "Player"
-placeholder_text = "Nickname"
+placeholder_text = "Enter nickname"
 alignment = 1
-max_length = 32
 
-[node name="BackButton" type="Button" parent="Frame/SettingsContainer"]
-custom_minimum_size = Vector2(200, 60)
+[node name="BackButton" type="Button" parent="SettingsContainer"]
+custom_minimum_size = Vector2(250, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "Back"
-
-[node name="TitleLabel" type="Label" parent="."]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -62.0
-offset_top = 100.0
-offset_right = 62.0
-offset_bottom = 145.0
-grow_horizontal = 2
-theme_override_font_sizes/font_size = 32
-text = "Settings"
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_flfri")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
+text = "Save"
+icon_alignment = 1

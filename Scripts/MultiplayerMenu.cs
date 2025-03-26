@@ -8,43 +8,65 @@ public partial class MultiplayerMenu : Control
     private Button backButton;
     private Label roomCodeLabel;
     private MultiplayerManager multiplayerManager;
-    private VBoxContainer multiplayerOptions;
 
     public override void _Ready()
     {
-        multiplayerOptions = GetNode<VBoxContainer>("Frame/MultiplayerOptions");
-        createRoomButton = GetNode<Button>("Frame/MultiplayerOptions/CreateRoomButton");
-        roomCodeInput = GetNode<LineEdit>("Frame/MultiplayerOptions/RoomCodeInput");
-        joinRoomButton = GetNode<Button>("Frame/MultiplayerOptions/JoinRoomButton");
-        backButton = GetNode<Button>("Frame/MultiplayerOptions/BackButton");
-        roomCodeLabel = GetNode<Label>("Frame/MultiplayerOptions/RoomCodeLabel");
+        GD.Print("MultiplayerMenu: Entering _Ready");
+
+        createRoomButton = GetNode<Button>("MultiplayerCreate/CreateRoomButton");
+        joinRoomButton = GetNode<Button>("MultiplayerJoin/JoinRoomButton");
+        roomCodeInput = GetNode<LineEdit>("MultiplayerJoin/RoomCodeInput");
+        roomCodeLabel = GetNode<Label>("MultiplayerCreate/RoomCodeLabel");
+        backButton = GetNode<Button>("BackButton");
         multiplayerManager = GetNode<MultiplayerManager>("/root/MultiplayerManager");
 
         if (!ValidateNodes()) return;
 
-        roomCodeLabel.MaxLinesVisible = 1;
-        roomCodeLabel.ClipText = true;
-        roomCodeLabel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        roomCodeLabel.CustomMinimumSize = new Vector2(200, 0);
+        GD.Print("MultiplayerMenu: All nodes found");
+
+        // Отладка свойств кнопок
+        GD.Print($"CreateRoomButton - Visible: {createRoomButton.Visible}, Disabled: {createRoomButton.Disabled}, MouseFilter: {createRoomButton.MouseFilter}");
+        GD.Print($"JoinRoomButton - Visible: {joinRoomButton.Visible}, Disabled: {joinRoomButton.Disabled}, MouseFilter: {joinRoomButton.MouseFilter}");
+        GD.Print($"BackButton - Visible: {backButton.Visible}, Disabled: {backButton.Disabled}, MouseFilter: {backButton.MouseFilter}");
+
+        //roomCodeLabel.MaxLinesVisible = 1;
+        //roomCodeLabel.ClipText = true;
+        //roomCodeLabel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        //roomCodeLabel.CustomMinimumSize = new Vector2(200, 0);
 
         createRoomButton.SizeFlagsHorizontal = SizeFlags.Fill;
         roomCodeInput.SizeFlagsHorizontal = SizeFlags.Fill;
         joinRoomButton.SizeFlagsHorizontal = SizeFlags.Fill;
         backButton.SizeFlagsHorizontal = SizeFlags.Fill;
 
-        createRoomButton.Pressed += OnCreateRoomButtonPressed;
-        joinRoomButton.Pressed += OnJoinRoomButtonPressed;
-        backButton.Pressed += OnBackButtonPressed;
+        createRoomButton.Pressed += () =>
+        {
+            GD.Print("CreateRoomButton pressed");
+            OnCreateRoomButtonPressed();
+        };
+        joinRoomButton.Pressed += () =>
+        {
+            GD.Print("JoinRoomButton pressed");
+            OnJoinRoomButtonPressed();
+        };
+        backButton.Pressed += () =>
+        {
+            GD.Print("BackButton pressed");
+            OnBackButtonPressed();
+        };
         multiplayerManager.Connect("RoomCreated", Callable.From((string code) => OnRoomCreated(code)));
         multiplayerManager.Connect("PlayerConnected", Callable.From(OnPlayerConnected));
+
+        GD.Print("MultiplayerMenu initialized");
     }
 
     private bool ValidateNodes()
     {
-        if (multiplayerOptions == null || createRoomButton == null || roomCodeInput == null || 
+        if (createRoomButton == null || roomCodeInput == null || 
             joinRoomButton == null || backButton == null || roomCodeLabel == null || multiplayerManager == null)
         {
             GD.PrintErr("Ошибка: Не найдены узлы в MultiplayerMenu!");
+            GD.Print($"createRoomButton: {createRoomButton}, roomCodeInput: {roomCodeInput}, joinRoomButton: {joinRoomButton}, backButton: {backButton}, roomCodeLabel: {roomCodeLabel}, multiplayerManager: {multiplayerManager}");
             return false;
         }
         return true;
@@ -53,13 +75,13 @@ public partial class MultiplayerMenu : Control
     private void OnCreateRoomButtonPressed()
     {
         multiplayerManager.CreateRoom();
-        roomCodeLabel.Text = "Creating room...";
+        roomCodeLabel.Text = "Creating Room...";
         roomCodeLabel.Modulate = new Color(1, 1, 1);
     }
 
     private void OnRoomCreated(string code)
     {
-        roomCodeLabel.Text = $"Room Code: {code} (Waiting...)";
+        roomCodeLabel.Text = $"Code: {code} (Waiting...)";
         roomCodeLabel.Modulate = new Color(1, 1, 1);
     }
 
@@ -68,7 +90,7 @@ public partial class MultiplayerMenu : Control
         string roomCode = roomCodeInput.Text.Trim().ToUpper();
         if (string.IsNullOrEmpty(roomCode))
         {
-            roomCodeLabel.Text = "Enter a room code!";
+            roomCodeLabel.Text = "Enter Code!";
             roomCodeLabel.Modulate = new Color(1, 0, 0);
             return;
         }
@@ -78,14 +100,14 @@ public partial class MultiplayerMenu : Control
             string currentRoomCode = multiplayerManager.GetRoomCode();
             if (string.IsNullOrEmpty(currentRoomCode))
             {
-                roomCodeLabel.Text = "Room not created yet!";
+                roomCodeLabel.Text = "Room is not created!";
                 roomCodeLabel.Modulate = new Color(1, 0, 0);
                 return;
             }
 
             if (roomCode == currentRoomCode)
             {
-                roomCodeLabel.Text = "Вы не можете присоединиться к своей комнате!";
+                roomCodeLabel.Text = "This is your room!";
                 roomCodeLabel.Modulate = new Color(1, 0, 0);
                 return;
             }
@@ -104,7 +126,11 @@ public partial class MultiplayerMenu : Control
     private void OnBackButtonPressed()
     {
         multiplayerManager.Cleanup();
-        GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
+        var error = GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
+        if (error != Error.Ok)
+        {
+            GD.PrintErr($"Не удалось загрузить сцену Menu.tscn: Ошибка {error}");
+        }
         QueueFree();
     }
 }
