@@ -247,7 +247,7 @@ private void SetupDeviceLayout()
 
     private void CreateCircles(Control table, string playerPrefix)
     {
-        string texturePath = playerPrefix == "P1" ? "res://Sprites/red.png" : "res://Sprites/blue.png";
+        string texturePath = playerPrefix == "P1" ? "res://Sprites/red_cup.png" : "res://Sprites/blue_cup.png";
         Texture2D texture = GD.Load<Texture2D>(texturePath);
         if (texture == null)
         {

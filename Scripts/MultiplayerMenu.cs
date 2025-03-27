@@ -70,7 +70,7 @@ public partial class MultiplayerMenu : Control
     private void OnCreateRoomButtonPressed()
     {
         multiplayerManager.CreateRoom();
-        roomCodeLabel.Text = "Creating Room...";
+        roomCodeLabel.Text = "Создание комнаты...";
         roomCodeLabel.Modulate = new Color(1, 1, 1);
     }
 
@@ -83,7 +83,7 @@ public partial class MultiplayerMenu : Control
         }
         else
         {
-            roomCodeLabel.Text = $"Code: {code} (Waiting...)";
+            roomCodeLabel.Text = $"Код: {code} (Ожидание...)";
             roomCodeLabel.Modulate = new Color(1, 1, 1);
         }
     }
@@ -93,7 +93,7 @@ public partial class MultiplayerMenu : Control
         string roomCode = roomCodeInput.Text.Trim().ToUpper();
         if (string.IsNullOrEmpty(roomCode))
         {
-            roomCodeInput.PlaceholderText = "Enter Code!";
+            roomCodeInput.PlaceholderText = "Введите код!";
             roomCodeInput.Modulate = new Color(1, 0, 0);
             return;
         }
@@ -104,21 +104,21 @@ public partial class MultiplayerMenu : Control
             if (string.IsNullOrEmpty(currentRoomCode))
             {
                 roomCodeInput.Text = "";
-                roomCodeInput.PlaceholderText = "Room is not created!";
+                roomCodeInput.PlaceholderText = "Комната не создана!";
                 roomCodeInput.Modulate = new Color(1, 0, 0);
                 return;
             }
             if (roomCode == currentRoomCode)
             {
                 roomCodeInput.Text = "";
-                roomCodeInput.PlaceholderText = "This is your room!";
+                roomCodeInput.PlaceholderText = "Это ваша комната!";
                 roomCodeInput.Modulate = new Color(1, 0, 0);
                 return;
             }
         }
 
         multiplayerManager.JoinRoom(roomCode);
-        roomCodeInput.PlaceholderText = "Connecting...";
+        roomCodeInput.PlaceholderText = "Подключение...";
         roomCodeInput.Modulate = new Color(1, 1, 1);
     }
 
