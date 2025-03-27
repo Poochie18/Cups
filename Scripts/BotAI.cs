@@ -1,19 +1,19 @@
-using Godot;
 using System;
 using System.Collections.Generic;
+using Godot;
 
 public class BotAI
 {
     private string[,] board;
-    private Control playerTable; // Круги бота (P2)
-    private Control opponentTable; // Круги игрока (P1)
+    private Control playerTable;
+    private Control opponentTable;
     private int difficulty;
 
     private static readonly int[,] WinningCombinations = new int[,]
     {
-        {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // Горизонтали
-        {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // Вертикали
-        {0, 4, 8}, {2, 4, 6}             // Диагонали
+        {0, 1, 2}, {3, 4, 5}, {6, 7, 8},
+        {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
+        {0, 4, 8}, {2, 4, 6}
     };
 
     public BotAI(string[,] board, Control playerTable, Control opponentTable, int difficulty)
@@ -27,7 +27,7 @@ public class BotAI
             GD.PrintErr($"BotAI: playerTable is {playerTable}, opponentTable is {opponentTable}");
     }
 
-    public (TextureRect, Vector2I)? GetMove()
+    public (TextureRect, Vector2I)? GetMove() // Обновлено на TextureRect
     {
         if (playerTable == null || playerTable.GetChildCount() == 0)
         {
@@ -45,7 +45,7 @@ public class BotAI
         };
     }
 
-    private (TextureRect, Vector2I)? EasyMove()
+    private (TextureRect, Vector2I)? EasyMove() // Обновлено на TextureRect
     {
         var (freeCells, overwriteCells) = GetAvailableCells();
         GD.Print($"BotAI.EasyMove: freeCells={freeCells.Count}, overwriteCells={overwriteCells.Count}");
@@ -56,11 +56,11 @@ public class BotAI
         }
 
         Random rand = new Random();
-        if (overwriteCells.Count > 0 && rand.Next(3) != 0) // 66% шанс перекрыть
+        if (overwriteCells.Count > 0 && rand.Next(3) != 0)
         {
             Vector2I cell = overwriteCells[rand.Next(overwriteCells.Count)];
             int existingSize = GetCircleSize(board[cell.X, cell.Y]);
-            TextureRect circle = GetAnyAvailableCircle(existingSize + 1);
+            TextureRect circle = GetAnyAvailableCircle(existingSize + 1); // Обновлено на TextureRect
             if (circle != null)
             {
                 GD.Print($"BotAI.EasyMove: Overwriting at ({cell.X}, {cell.Y}) with {circle.Name}");
@@ -70,7 +70,7 @@ public class BotAI
         else if (freeCells.Count > 0)
         {
             Vector2I cell = freeCells[rand.Next(freeCells.Count)];
-            TextureRect circle = GetAnyAvailableCircle(0);
+            TextureRect circle = GetAnyAvailableCircle(0); // Обновлено на TextureRect
             if (circle != null)
             {
                 GD.Print($"BotAI.EasyMove: Placing {circle.Name} at ({cell.X}, {cell.Y})");
@@ -82,7 +82,7 @@ public class BotAI
         return null;
     }
 
-    private (TextureRect, Vector2I)? MediumMove()
+    private (TextureRect, Vector2I)? MediumMove() // Обновлено на TextureRect
     {
         var (freeCells, overwriteCells) = GetAvailableCells();
         GD.Print($"BotAI.MediumMove: freeCells={freeCells.Count}, overwriteCells={overwriteCells.Count}");
@@ -100,11 +100,11 @@ public class BotAI
         if (blockMove.HasValue)
             return blockMove;
 
-        if (overwriteCells.Count > 0) // Предпочитаем перекрытие
+        if (overwriteCells.Count > 0)
         {
-            Vector2I cell = overwriteCells[0]; // Берём первую для скорости
+            Vector2I cell = overwriteCells[0];
             int existingSize = GetCircleSize(board[cell.X, cell.Y]);
-            TextureRect circle = GetAnyAvailableCircle(existingSize + 1);
+            TextureRect circle = GetAnyAvailableCircle(existingSize + 1); // Обновлено на TextureRect
             if (circle != null)
             {
                 GD.Print($"BotAI.MediumMove: Overwriting at ({cell.X}, {cell.Y}) with {circle.Name}");
@@ -114,7 +114,7 @@ public class BotAI
 
         if (freeCells.Contains(new Vector2I(1, 1)))
         {
-            TextureRect circle = GetAnyAvailableCircle(0);
+            TextureRect circle = GetAnyAvailableCircle(0); // Обновлено на TextureRect
             if (circle != null)
             {
                 GD.Print($"BotAI.MediumMove: Taking center with {circle.Name}");
@@ -125,7 +125,7 @@ public class BotAI
         if (freeCells.Count > 0)
         {
             Vector2I cell = freeCells[0];
-            TextureRect circle = GetAnyAvailableCircle(0);
+            TextureRect circle = GetAnyAvailableCircle(0); // Обновлено на TextureRect
             if (circle != null)
             {
                 GD.Print($"BotAI.MediumMove: Free cell at ({cell.X}, {cell.Y}) with {circle.Name}");
@@ -137,7 +137,7 @@ public class BotAI
         return null;
     }
 
-    private (TextureRect, Vector2I)? HardMove()
+    private (TextureRect, Vector2I)? HardMove() // Обновлено на TextureRect
     {
         var (freeCells, overwriteCells) = GetAvailableCells();
         GD.Print($"BotAI.HardMove: freeCells={freeCells.Count}, overwriteCells={overwriteCells.Count}");
@@ -155,11 +155,11 @@ public class BotAI
         if (blockMove.HasValue)
             return blockMove;
 
-        if (overwriteCells.Count > 0) // Высокий приоритет на перекрытие
+        if (overwriteCells.Count > 0)
         {
             Vector2I cell = overwriteCells[0];
             int existingSize = GetCircleSize(board[cell.X, cell.Y]);
-            TextureRect circle = GetLargestAvailableCircle(); // Используем большой круг для перекрытия
+            TextureRect circle = GetLargestAvailableCircle(); // Обновлено на TextureRect
             if (circle != null && GetCircleSize(circle.Name) > existingSize)
             {
                 GD.Print($"BotAI.HardMove: Overwriting at ({cell.X}, {cell.Y}) with {circle.Name}");
@@ -172,7 +172,7 @@ public class BotAI
         {
             if (freeCells.Contains(cell))
             {
-                TextureRect circle = GetAnyAvailableCircle(0);
+                TextureRect circle = GetAnyAvailableCircle(0); // Обновлено на TextureRect
                 if (circle != null)
                 {
                     GD.Print($"BotAI.HardMove: Strategic free cell at ({cell.X}, {cell.Y}) with {circle.Name}");
@@ -184,7 +184,7 @@ public class BotAI
         if (freeCells.Count > 0)
         {
             Vector2I cell = freeCells[0];
-            TextureRect circle = GetAnyAvailableCircle(0);
+            TextureRect circle = GetAnyAvailableCircle(0); // Обновлено на TextureRect
             if (circle != null)
             {
                 GD.Print($"BotAI.HardMove: Free cell at ({cell.X}, {cell.Y}) with {circle.Name}");
@@ -219,7 +219,7 @@ public class BotAI
         return (freeCells, overwriteCells);
     }
 
-    private (TextureRect, Vector2I)? ForceMove()
+    private (TextureRect, Vector2I)? ForceMove() // Обновлено на TextureRect
     {
         for (int i = 0; i < 9; i++)
         {
@@ -228,7 +228,7 @@ public class BotAI
             string cell = board[row, col];
             foreach (Node child in playerTable.GetChildren())
             {
-                if (child is TextureRect cup && CanPlace(GetCircleSize(cup.Name), cell))
+                if (child is TextureRect cup && CanPlace(GetCircleSize(cup.Name), cell)) // Обновлено на TextureRect
                 {
                     GD.Print($"BotAI.ForceMove: Forced move at ({row}, {col}) with {cup.Name}");
                     return (cup, new Vector2I(row, col));
@@ -239,7 +239,7 @@ public class BotAI
         return null;
     }
 
-    private (TextureRect, Vector2I)? FindBestMove(List<Vector2I> freeCells, List<Vector2I> overwriteCells, string playerPrefix)
+    private (TextureRect, Vector2I)? FindBestMove(List<Vector2I> freeCells, List<Vector2I> overwriteCells, string playerPrefix) // Обновлено на TextureRect
     {
         for (int i = 0; i < WinningCombinations.GetLength(0); i++)
         {
@@ -285,7 +285,7 @@ public class BotAI
             {
                 if (freeCells.Contains(targetCell.Value) || overwriteCells.Contains(targetCell.Value))
                 {
-                    TextureRect circle = playerPrefix == "P2" ? GetLargestAvailableCircle() : GetAnyAvailableCircle(minSizeNeeded);
+                    TextureRect circle = playerPrefix == "P2" ? GetLargestAvailableCircle() : GetAnyAvailableCircle(minSizeNeeded); // Обновлено на TextureRect
                     if (circle != null && GetCircleSize(circle.Name) >= minSizeNeeded)
                     {
                         GD.Print($"BotAI: {(playerPrefix == "P2" ? "Winning" : "Blocking")} move at ({targetCell.Value.X}, {targetCell.Value.Y}) with {circle.Name}");
@@ -303,7 +303,7 @@ public class BotAI
         int existingSize = GetCircleSize(existingCircleName);
         foreach (Node child in playerTable.GetChildren())
         {
-            if (child is TextureRect cup && GetCircleSize(cup.Name) > existingSize)
+            if (child is TextureRect cup && GetCircleSize(cup.Name) > existingSize) // Обновлено на TextureRect
                 return true;
         }
         return false;
@@ -316,24 +316,24 @@ public class BotAI
         return size > existingSize;
     }
 
-    private TextureRect GetAnyAvailableCircle(int minSize)
+    private TextureRect GetAnyAvailableCircle(int minSize) // Обновлено на TextureRect
     {
         foreach (Node child in playerTable.GetChildren())
         {
-            if (child is TextureRect circle && GetCircleSize(circle.Name) >= minSize)
+            if (child is TextureRect circle && GetCircleSize(circle.Name) >= minSize) // Обновлено на TextureRect
                 return circle;
         }
         GD.Print($"BotAI.GetAnyAvailableCircle: No circle found with minSize {minSize}");
         return null;
     }
 
-    private TextureRect GetLargestAvailableCircle()
+    private TextureRect GetLargestAvailableCircle() // Обновлено на TextureRect
     {
-        TextureRect largest = null;
+        TextureRect largest = null; // Обновлено на TextureRect
         int maxSize = -1;
         foreach (Node child in playerTable.GetChildren())
         {
-            if (child is TextureRect circle)
+            if (child is TextureRect circle) // Обновлено на TextureRect
             {
                 int size = GetCircleSize(circle.Name);
                 if (size > maxSize)

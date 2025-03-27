@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://c11nd81r0mrio"]
+[gd_scene load_steps=7 format=3 uid="uid://c11nd81r0mrio"]
 
 [ext_resource type="Script" uid="uid://dcvhtihk0kmfh" path="res://Scripts/Menu.cs" id="1_usfse"]
 [ext_resource type="FontFile" uid="uid://dlfyxagh4vdlv" path="res://Sprites/Roboto-Regular.ttf" id="2_syfuq"]
@@ -29,6 +29,15 @@ corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 shadow_size = 8
 shadow_offset = Vector2(4, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ma218"]
+bg_color = Color(0.113725, 0.486275, 0.862745, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 4
+shadow_offset = Vector2(2, 2)
 
 [node name="Menu" type="Control"]
 layout_mode = 3
@@ -131,3 +140,20 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
 text = "Exit
 "
 icon_alignment = 1
+
+[node name="MultiplayerLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -175.0
+offset_top = 75.0
+offset_right = 175.0
+offset_bottom = 150.0
+grow_horizontal = 2
+theme_override_fonts/font = ExtResource("2_syfuq")
+theme_override_font_sizes/font_size = 48
+theme_override_styles/normal = SubResource("StyleBoxFlat_ma218")
+text = "6 Cups"
+horizontal_alignment = 1
+vertical_alignment = 1

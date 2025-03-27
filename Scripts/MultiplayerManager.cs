@@ -4,7 +4,7 @@ using System;
 public partial class MultiplayerManager : Node
 {
     private WebSocketPeer wsPeer;
-    private const string ServerUrl = "wss://tic-tac-toe-server-new.onrender.com/create";
+    private const string ServerBaseUrl = "wss://tic-tac-toe-server-new.onrender.com"; // Убрали /create
     private string currentRoomCode = "";
     private bool isHost = false;
 
@@ -32,16 +32,18 @@ public partial class MultiplayerManager : Node
         }
 
         wsPeer = new WebSocketPeer();
-        Error error = wsPeer.ConnectToUrl($"{ServerUrl}/create");
+        string url = $"{ServerBaseUrl}/create";
+        Error error = wsPeer.ConnectToUrl(url);
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Failed to connect to {ServerUrl}/create: Error {error}");
+            GD.PrintErr($"Failed to connect to {url}: Error {error}");
+            EmitSignal(SignalName.RoomCreated, "ERROR: Failed to connect");
             return;
         }
 
         isHost = true;
         currentRoomCode = ""; // Сбрасываем код комнаты до получения нового
-        GD.Print("Connecting to server to create room");
+        GD.Print($"Connecting to server to create room at {url}");
     }
 
     public void JoinRoom(string code)
@@ -54,15 +56,17 @@ public partial class MultiplayerManager : Node
 
         wsPeer = new WebSocketPeer();
         currentRoomCode = code;
-        Error error = wsPeer.ConnectToUrl($"{ServerUrl}/join?room={code}");
+        string url = $"{ServerBaseUrl}/join?room={code}";
+        Error error = wsPeer.ConnectToUrl(url);
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Failed to connect to {ServerUrl}/join?room={code}: Error {error}");
+            GD.PrintErr($"Failed to connect to {url}: Error {error}");
+            EmitSignal(SignalName.RoomCreated, "ERROR: Failed to connect");
             return;
         }
 
         isHost = false;
-        GD.Print($"Connecting to room {code} via {ServerUrl}/join?room={code}");
+        GD.Print($"Connecting to room {code} via {url}");
     }
 
     public void SendMessage(string message)
@@ -131,7 +135,9 @@ public partial class MultiplayerManager : Node
                                     }
                                     else if (type == "error")
                                     {
-                                        GD.PrintErr($"Server error: {message}");
+                                        string errorMessage = data.ContainsKey("message") ? data["message"].AsString() : "Unknown error";
+                                        GD.PrintErr($"Server error: {errorMessage}");
+                                        EmitSignal(SignalName.RoomCreated, $"ERROR: {errorMessage}");
                                     }
                                 }
                             }
@@ -156,7 +162,9 @@ public partial class MultiplayerManager : Node
         }
         else if (state == WebSocketPeer.State.Closed)
         {
-            // Обработка закрытия соединения
+            var code = wsPeer.GetCloseCode();
+            var reason = wsPeer.GetCloseReason();
+            //GD.Print($"WebSocket closed with code: {code}, reason: {reason}");
         }
     }
 

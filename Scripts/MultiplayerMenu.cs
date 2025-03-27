@@ -29,11 +29,6 @@ public partial class MultiplayerMenu : Control
         GD.Print($"JoinRoomButton - Visible: {joinRoomButton.Visible}, Disabled: {joinRoomButton.Disabled}, MouseFilter: {joinRoomButton.MouseFilter}");
         GD.Print($"BackButton - Visible: {backButton.Visible}, Disabled: {backButton.Disabled}, MouseFilter: {backButton.MouseFilter}");
 
-        //roomCodeLabel.MaxLinesVisible = 1;
-        //roomCodeLabel.ClipText = true;
-        //roomCodeLabel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        //roomCodeLabel.CustomMinimumSize = new Vector2(200, 0);
-
         createRoomButton.SizeFlagsHorizontal = SizeFlags.Fill;
         roomCodeInput.SizeFlagsHorizontal = SizeFlags.Fill;
         joinRoomButton.SizeFlagsHorizontal = SizeFlags.Fill;
@@ -81,8 +76,16 @@ public partial class MultiplayerMenu : Control
 
     private void OnRoomCreated(string code)
     {
-        roomCodeLabel.Text = $"Code: {code} (Waiting...)";
-        roomCodeLabel.Modulate = new Color(1, 1, 1);
+        if (code.StartsWith("ERROR:"))
+        {
+            roomCodeLabel.Text = code;
+            roomCodeLabel.Modulate = new Color(1, 0, 0);
+        }
+        else
+        {
+            roomCodeLabel.Text = $"Code: {code} (Waiting...)";
+            roomCodeLabel.Modulate = new Color(1, 1, 1);
+        }
     }
 
     private void OnJoinRoomButtonPressed()
@@ -90,8 +93,8 @@ public partial class MultiplayerMenu : Control
         string roomCode = roomCodeInput.Text.Trim().ToUpper();
         if (string.IsNullOrEmpty(roomCode))
         {
-            roomCodeLabel.Text = "Enter Code!";
-            roomCodeLabel.Modulate = new Color(1, 0, 0);
+            roomCodeInput.PlaceholderText = "Enter Code!";
+            roomCodeInput.Modulate = new Color(1, 0, 0);
             return;
         }
 
@@ -100,26 +103,33 @@ public partial class MultiplayerMenu : Control
             string currentRoomCode = multiplayerManager.GetRoomCode();
             if (string.IsNullOrEmpty(currentRoomCode))
             {
-                roomCodeLabel.Text = "Room is not created!";
-                roomCodeLabel.Modulate = new Color(1, 0, 0);
+                roomCodeInput.Text = "";
+                roomCodeInput.PlaceholderText = "Room is not created!";
+                roomCodeInput.Modulate = new Color(1, 0, 0);
                 return;
             }
-
             if (roomCode == currentRoomCode)
             {
-                roomCodeLabel.Text = "This is your room!";
-                roomCodeLabel.Modulate = new Color(1, 0, 0);
+                roomCodeInput.Text = "";
+                roomCodeInput.PlaceholderText = "This is your room!";
+                roomCodeInput.Modulate = new Color(1, 0, 0);
                 return;
             }
         }
 
         multiplayerManager.JoinRoom(roomCode);
-        roomCodeLabel.Text = "Connecting...";
-        roomCodeLabel.Modulate = new Color(1, 1, 1);
+        roomCodeInput.PlaceholderText = "Connecting...";
+        roomCodeInput.Modulate = new Color(1, 1, 1);
     }
 
     private void OnPlayerConnected()
     {
+        GD.Print("Player connected, closing MultiplayerMenu");
+        var error = GetTree().ChangeSceneToFile("res://Scenes/Game.tscn");
+        if (error != Error.Ok)
+        {
+            GD.PrintErr($"Не удалось загрузить сцену Game.tscn: Ошибка {error}");
+        }
         QueueFree();
     }
 
