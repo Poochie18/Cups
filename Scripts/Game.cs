@@ -24,7 +24,7 @@ public partial class Game : Control
     private MultiplayerManager multiplayerManager;
     private GameOverModal gameOverModal;
     private TextureRect[] tiles;
-    public string gameMode = "multiplayer"; // Добавляем поле gameMode
+    public string gameMode = "multiplayer";
 
     private static readonly int[,] WinningCombinations = new int[,]
     {
@@ -33,71 +33,82 @@ public partial class Game : Control
         {0, 4, 8}, {2, 4, 6}
     };
 
-public override void _Ready()
-{
-    grid = GetNode<GridContainer>("Grid");
-    player1Table = GetNode<Control>("Player1TableContainer/Player1Table");
-    player2Table = GetNode<Control>("Player2TableContainer/Player2Table");
-    player1Label = GetNode<Label>("Player1TableContainer/Player1Label");
-    player2Label = GetNode<Label>("Player2TableContainer/Player2Label");
-    ui = GetNode<UI>("UI");
-    backToMenuButton = GetNode<Button>("UI/BackToMenuButton");
-    restartButton = GetNode<Button>("UI/RestartButton");
-    multiplayerManager = GetNode<MultiplayerManager>("/root/MultiplayerManager");
-    gameOverModal = GetNode<GameOverModal>("GameOverModal");
-
-    if (!ValidateNodes()) return;
-
-    gameOverModal.Visible = false;
-    restartRequested = false;
-
-    CreateGameField();
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++)
-            board[i, j] = "";
-
-    SetupDeviceLayout();
-
-    float buttonSize = grid.Size.X / 3;
-    for (int i = 0; i < 9; i++)
+    public override void _Ready()
     {
-        gridButtons[i].CustomMinimumSize = new Vector2(buttonSize, buttonSize);
-        gridButtons[i].Size = new Vector2(buttonSize, buttonSize);
-        if (tiles[i] != null)
+        grid = GetNode<GridContainer>("Grid");
+        player1Table = GetNode<Control>("Player1TableContainer/Player1Table");
+        player2Table = GetNode<Control>("Player2TableContainer/Player2Table");
+        player1Label = GetNode<Label>("Player1TableContainer/Player1Label");
+        player2Label = GetNode<Label>("Player2TableContainer/Player2Label");
+        ui = GetNode<UI>("UI");
+        backToMenuButton = GetNode<Button>("UI/BackToMenuButton");
+        restartButton = GetNode<Button>("UI/RestartButton");
+        multiplayerManager = GetNode<MultiplayerManager>("/root/MultiplayerManager");
+        gameOverModal = GetNode<GameOverModal>("GameOverModal");
+
+        if (!ValidateNodes()) return;
+
+        gameOverModal.Visible = false;
+        restartRequested = false;
+
+        CreateGameField();
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                board[i, j] = "";
+
+        SetupDeviceLayout();
+
+        float buttonSize = grid.Size.X / 3;
+        for (int i = 0; i < 9; i++)
         {
-            tiles[i].Position = Vector2.Zero;
-            tiles[i].Size = gridButtons[i].Size;
+            gridButtons[i].CustomMinimumSize = new Vector2(buttonSize, buttonSize);
+            gridButtons[i].Size = new Vector2(buttonSize, buttonSize);
+            if (tiles[i] != null)
+            {
+                tiles[i].Position = Vector2.Zero;
+                tiles[i].Size = gridButtons[i].Size;
+            }
         }
+
+        CreateCircles(player1Table, "P1");
+        CreateCircles(player2Table, "P2");
+
+        var global = GetNode<Global>("/root/Global");
+        if (multiplayerManager.IsHost())
+        {
+            currentPlayer = "Player1";
+            player1Label.Text = global.PlayerNickname;
+            player2Label.Text = global.OpponentNickname;
+            ui.UpdateStatus($"Ход {global.PlayerNickname}");
+            SendMessage($"sync_labels:{global.PlayerNickname}");
+            SendMessage($"sync_current_player:{currentPlayer}");
+        }
+        else
+        {
+            currentPlayer = "Player1";
+            player1Label.Text = global.PlayerNickname;
+            player2Label.Text = global.OpponentNickname;
+            ui.UpdateStatus($"Ход {global.OpponentNickname}");
+            SendMessage($"sync_labels:{global.PlayerNickname}");
+        }
+
+        multiplayerManager.Connect("MessageReceived", Callable.From((string message) => ProcessMessage(message)));
+        // MODIFIED: Replace the direct connection to ui.OnMenuButtonPressed with a custom handler
+        backToMenuButton.Pressed += OnBackToMenuButtonPressed;
+        restartButton.Pressed += ui.OnRestartButtonPressed;
+        gameOverModal.MenuButton.Pressed += OnMenuButtonPressed;
+        gameOverModal.RestartButton.Pressed += OnRestartButtonPressed;
     }
 
-    CreateCircles(player1Table, "P1");
-    CreateCircles(player2Table, "P2");
-
-    var global = GetNode<Global>("/root/Global");
-    if (multiplayerManager.IsHost())
+    // NEW: Custom handler for backToMenuButton.Pressed
+    private void OnBackToMenuButtonPressed()
     {
-        currentPlayer = "Player1"; // Хост всегда начинает
-        player1Label.Text = global.PlayerNickname; // Ник хоста справа
-        player2Label.Text = global.OpponentNickname; // Ник клиента слева
-        ui.UpdateStatus($"Ход {global.PlayerNickname}");
-        SendMessage($"sync_labels:{global.PlayerNickname}");
-        SendMessage($"sync_current_player:{currentPlayer}");
+        var global = GetNode<Global>("/root/Global");
+        // Send a message to the other player before leaving
+        SendMessage($"player_left:{global.PlayerNickname}");
+        // Transition to the menu scene for the player who pressed the button
+        GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
     }
-    else
-    {
-        currentPlayer = "Player1"; // Клиент изначально ждёт хоста
-        player1Label.Text = global.PlayerNickname; // Ник клиента справа (после зеркалирования)
-        player2Label.Text = global.OpponentNickname; // Ник хоста слева (после зеркалирования)
-        ui.UpdateStatus($"Ход {global.OpponentNickname}");
-        SendMessage($"sync_labels:{global.PlayerNickname}");
-    }
-
-    multiplayerManager.Connect("MessageReceived", Callable.From((string message) => ProcessMessage(message)));
-    backToMenuButton.Pressed += ui.OnMenuButtonPressed;
-    restartButton.Pressed += ui.OnRestartButtonPressed;
-    gameOverModal.MenuButton.Pressed += OnMenuButtonPressed;
-    gameOverModal.RestartButton.Pressed += OnRestartButtonPressed;
-}
 
     private bool ValidateNodes()
     {
@@ -118,84 +129,73 @@ public override void _Ready()
         return true;
     }
 
-private void SetupDeviceLayout()
-{
-    bool isMobile = OS.GetName() == "Android" || OS.GetName() == "iOS";
-    Vector2 screenSize = GetViewport().GetVisibleRect().Size;
-
-    if (isMobile)
+    private void SetupDeviceLayout()
     {
-        // Портретный режим для смартфона (занимаемся позже)
-        DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
-        DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
-        GD.Print("Mobile layout setup will be implemented later.");
-    }
-    else
-    {
-        // Горизонтальный режим для ПК (16:9, 1280x720)
-        DisplayServer.WindowSetSize(new Vector2I(1280, 720));
-        DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
-        screenSize = new Vector2(1280, 720);
-        GD.Print($"Screen Size: {screenSize}");
+        bool isMobile = OS.GetName() == "Android" || OS.GetName() == "iOS";
+        Vector2 screenSize = GetViewport().GetVisibleRect().Size;
 
-        // Grid по центру
-        float gridSize = 500;
-        grid.Position = new Vector2((screenSize.X - gridSize) / 2, 120);
-        grid.Size = new Vector2(gridSize, gridSize);
-        grid.Visible = true;
-        GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
-
-        // Player1TableContainer справа (для хоста — это его стол)
-        var player1TableContainer = GetNode<Control>("Player1TableContainer");
-        float player1TableWidth = (screenSize.X - gridSize) / 2 - 40;
-        float player1TableHeight = gridSize;
-        player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + 20, 160);
-        player1TableContainer.Size = new Vector2(player1TableWidth, player1TableHeight);
-        player1TableContainer.Visible = true;
-
-        // Player1Table занимает верхнюю часть контейнера
-        player1Table.Position = new Vector2(0, 0);
-        player1Table.Size = new Vector2(player1TableWidth, player1TableHeight - player1Label.Size.Y - 10);
-        player1Table.Visible = true;
-
-        // Player1Label размещаем под Player1Table
-        player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
-        GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
-        GD.Print($"Player1Table Position: {player1Table.Position}, Size: {player1Table.Size}");
-        GD.Print($"Player1Label Position: {player1Label.Position}, Size: {player1Label.Size}");
-
-        // Player2TableContainer слева (для хоста — это стол оппонента)
-        var player2TableContainer = GetNode<Control>("Player2TableContainer");
-        float player2TableWidth = (screenSize.X - gridSize) / 2 - 40;
-        float player2TableHeight = gridSize;
-        player2TableContainer.Position = new Vector2(20, 160);
-        player2TableContainer.Size = new Vector2(player2TableWidth, player2TableHeight);
-        player2TableContainer.Visible = true;
-
-        // Player2Table занимает верхнюю часть контейнера
-        player2Table.Position = new Vector2(0, 0);
-        player2Table.Size = new Vector2(player2TableWidth, player2TableHeight - player2Label.Size.Y - 10);
-        player2Table.Visible = true;
-
-        // Player2Label размещаем под Player2Table
-        player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
-        GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
-        GD.Print($"Player2Table Position: {player2Table.Position}, Size: {player2Table.Size}");
-        GD.Print($"Player2Label Position: {player2Label.Position}, Size: {player2Label.Size}");
-
-        // Для клиента зеркалим столы
-        if (!multiplayerManager.IsHost())
+        if (isMobile)
         {
-            (player1TableContainer.Position, player2TableContainer.Position) = (player2TableContainer.Position, player1TableContainer.Position);
-            UpdateCirclePositions(player1Table);
-            UpdateCirclePositions(player2Table);
+            DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
+            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
+            GD.Print("Mobile layout setup will be implemented later.");
+        }
+        else
+        {
+            DisplayServer.WindowSetSize(new Vector2I(1280, 720));
+            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+            screenSize = new Vector2(1280, 720);
+            GD.Print($"Screen Size: {screenSize}");
 
-            // Обновляем позиции меток после зеркалирования
+            float gridSize = 500;
+            grid.Position = new Vector2((screenSize.X - gridSize) / 2, 120);
+            grid.Size = new Vector2(gridSize, gridSize);
+            grid.Visible = true;
+            GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
+
+            var player1TableContainer = GetNode<Control>("Player1TableContainer");
+            float player1TableWidth = (screenSize.X - gridSize) / 2 - 40;
+            float player1TableHeight = gridSize;
+            player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + 20, 160);
+            player1TableContainer.Size = new Vector2(player1TableWidth, player1TableHeight);
+            player1TableContainer.Visible = true;
+
+            player1Table.Position = new Vector2(0, 0);
+            player1Table.Size = new Vector2(player1TableWidth, player1TableHeight - player1Label.Size.Y - 10);
+            player1Table.Visible = true;
+
             player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
+            GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
+            GD.Print($"Player1Table Position: {player1Table.Position}, Size: {player1Table.Size}");
+            GD.Print($"Player1Label Position: {player1Label.Position}, Size: {player1Label.Size}");
+
+            var player2TableContainer = GetNode<Control>("Player2TableContainer");
+            float player2TableWidth = (screenSize.X - gridSize) / 2 - 40;
+            float player2TableHeight = gridSize;
+            player2TableContainer.Position = new Vector2(20, 160);
+            player2TableContainer.Size = new Vector2(player2TableWidth, player2TableHeight);
+            player2TableContainer.Visible = true;
+
+            player2Table.Position = new Vector2(0, 0);
+            player2Table.Size = new Vector2(player2TableWidth, player2TableHeight - player2Label.Size.Y - 10);
+            player2Table.Visible = true;
+
             player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
+            GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
+            GD.Print($"Player2Table Position: {player2Table.Position}, Size: {player2Table.Size}");
+            GD.Print($"Player2Label Position: {player2Label.Position}, Size: {player2Label.Size}");
+
+            if (!multiplayerManager.IsHost())
+            {
+                (player1TableContainer.Position, player2TableContainer.Position) = (player2TableContainer.Position, player1TableContainer.Position);
+                UpdateCirclePositions(player1Table);
+                UpdateCirclePositions(player2Table);
+
+                player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
+                player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
+            }
         }
     }
-}
 
     private void CreateGameField()
     {
@@ -340,102 +340,107 @@ private void SetupDeviceLayout()
     }
 
     private void ProcessMessage(string message)
-{
-    var global = GetNode<Global>("/root/Global");
-    string[] parts = message.Split(':');
-
-    switch (parts[0])
     {
-        case "sync_labels":
-            if (parts.Length != 2) return;
-            string senderNickname = parts[1];
-            if (multiplayerManager.IsHost())
-            {
-                global.OpponentNickname = senderNickname;
-                player2Label.Text = senderNickname; // Ник клиента слева
-                SendMessage($"update_labels:{global.PlayerNickname}:{senderNickname}");
-            }
-            else
-            {
-                global.OpponentNickname = senderNickname;
-                player2Label.Text = senderNickname; // Ник хоста слева (после зеркалирования)
-                SendMessage($"update_labels:{senderNickname}:{global.PlayerNickname}");
-            }
-            break;
+        var global = GetNode<Global>("/root/Global");
+        string[] parts = message.Split(':');
 
-        case "update_labels":
-            if (parts.Length != 3) return;
-            string serverNickname = parts[1];
-            string clientNickname = parts[2];
-            if (multiplayerManager.IsHost())
-            {
-                player1Label.Text = global.PlayerNickname; // Ник хоста справа
-                player2Label.Text = clientNickname; // Ник клиента слева
-                global.OpponentNickname = clientNickname;
-            }
-            else
-            {
-                player1Label.Text = global.PlayerNickname; // Ник клиента справа (после зеркалирования)
-                player2Label.Text = serverNickname; // Ник хоста слева (после зеркалирования)
-                global.OpponentNickname = serverNickname;
-            }
-            break;
+        switch (parts[0])
+        {
+            case "sync_labels":
+                if (parts.Length != 2) return;
+                string senderNickname = parts[1];
+                if (multiplayerManager.IsHost())
+                {
+                    global.OpponentNickname = senderNickname;
+                    player2Label.Text = senderNickname;
+                    SendMessage($"update_labels:{global.PlayerNickname}:{senderNickname}");
+                }
+                else
+                {
+                    global.OpponentNickname = senderNickname;
+                    player2Label.Text = senderNickname;
+                    SendMessage($"update_labels:{senderNickname}:{global.PlayerNickname}");
+                }
+                break;
 
-        case "sync_current_player":
-            if (parts.Length != 2) return;
-            string newPlayer = parts[1];
-            SyncCurrentPlayer(newPlayer);
-            break;
+            case "update_labels":
+                if (parts.Length != 3) return;
+                string serverNickname = parts[1];
+                string clientNickname = parts[2];
+                if (multiplayerManager.IsHost())
+                {
+                    player1Label.Text = global.PlayerNickname;
+                    player2Label.Text = clientNickname;
+                    global.OpponentNickname = clientNickname;
+                }
+                else
+                {
+                    player1Label.Text = global.PlayerNickname;
+                    player2Label.Text = serverNickname;
+                    global.OpponentNickname = serverNickname;
+                }
+                break;
 
-        case "move":
-            if (parts.Length != 8) return;
-            string circleName = parts[1];
-            int row = int.Parse(parts[2]);
-            int col = int.Parse(parts[3]);
-            Color color = new(parts[4]);
-            Vector2 size = new(float.Parse(parts[5]), float.Parse(parts[6]));
-            string newPlayerMove = parts[7];
-            SyncMove(circleName, row, col, color, size);
-            SyncCurrentPlayer(newPlayerMove);
-            break;
+            case "sync_current_player":
+                if (parts.Length != 2) return;
+                string newPlayer = parts[1];
+                SyncCurrentPlayer(newPlayer);
+                break;
 
-        case "game_over":
-            if (parts.Length < 2) return;
-            string result = parts[1];
-            if (result == "win" && parts.Length == 3)
-            {
-                string winner = parts[2];
-                string winnerName = winner == "Player1" ? player1Label.Text : player2Label.Text;
-                gameOverModal.ResultLabel.Text = $"{winnerName} победил!";
+            case "move":
+                if (parts.Length != 8) return;
+                string circleName = parts[1];
+                int row = int.Parse(parts[2]);
+                int col = int.Parse(parts[3]);
+                Color color = new(parts[4]);
+                Vector2 size = new(float.Parse(parts[5]), float.Parse(parts[6]));
+                string newPlayerMove = parts[7];
+                SyncMove(circleName, row, col, color, size);
+                SyncCurrentPlayer(newPlayerMove);
+                break;
+
+            case "game_over":
+                if (parts.Length < 2) return;
+                string result = parts[1];
+                if (result == "win" && parts.Length == 3)
+                {
+                    string winner = parts[2];
+                    string winnerName = winner == "Player1" ? player1Label.Text : player2Label.Text;
+                    gameOverModal.ResultLabel.Text = $"{winnerName} победил!";
+                    gameOverModal.Visible = true;
+                    gameEnded = true;
+                }
+                else if (result == "draw")
+                {
+                    gameOverModal.ResultLabel.Text = "Ничья!";
+                    gameOverModal.Visible = true;
+                    gameEnded = true;
+                }
+                break;
+
+            case "restart_request":
+                if (parts.Length != 2) return;
+                restartRequested = true;
+                gameOverModal.InstructionLabel.Text = $"Игрок {parts[1]} ожидает";
+                //ui.UpdateStatus($"Игрок {parts[1]} ожидает");
+                gameOverModal.Visible = true;
+                break;
+
+            case "restart_confirmed":
+                GetTree().ReloadCurrentScene();
+                break;
+
+            case "player_left":
+                if (parts.Length != 2) return;
+                // MODIFIED: Update GameOverModal for the remaining player
+                gameOverModal.ResultLabel.Text = "Игра окончена";
+                gameOverModal.InstructionLabel.Text = $"Игрок {parts[1]} покинул игру";
+                gameOverModal.RestartButton.Disabled = true; // Disable the Restart button
                 gameOverModal.Visible = true;
                 gameEnded = true;
-            }
-            else if (result == "draw")
-            {
-                gameOverModal.ResultLabel.Text = "Ничья!";
-                gameOverModal.Visible = true;
-                gameEnded = true;
-            }
-            break;
-
-        case "restart_request":
-            if (parts.Length != 2) return;
-            restartRequested = true;
-            ui.UpdateStatus($"Игрок {parts[1]} ожидает");
-            gameOverModal.Visible = true;
-            break;
-
-        case "restart_confirmed":
-            GetTree().ReloadCurrentScene();
-            break;
-
-        case "player_left":
-            if (parts.Length != 2) return;
-            ui.UpdateStatus($"Игрок {parts[1]} покинул игру");
-            gameOverModal.Visible = true;
-            break;
+                break;
+        }
     }
-}
 
     private void SyncMove(string circleName, int row, int col, Color color, Vector2 size)
     {
@@ -678,6 +683,7 @@ private void SetupDeviceLayout()
                 string winnerName = winner == "Player1" ? player1Label.Text : player2Label.Text;
                 gameOverModal.ResultLabel.Text = $"{winnerName} победил!";
                 gameOverModal.Visible = true;
+                ui.Visible = false;
                 gameEnded = true;
                 SendMessage($"game_over:win:{winner}");
                 return;
@@ -698,6 +704,7 @@ private void SetupDeviceLayout()
             gameOverModal.ResultLabel.Text = "Ничья!";
             gameOverModal.Visible = true;
             gameEnded = true;
+            ui.Visible = false;
             SendMessage("game_over:draw");
         }
     }
@@ -741,7 +748,7 @@ private void SetupDeviceLayout()
         {
             SendMessage($"restart_request:{global.PlayerNickname}");
             restartRequested = true;
-            ui.UpdateStatus($"Ожидание второго игрока...");
+            //ui.UpdateStatus($"Ожидание второго игрока...");
         }
         else
         {
@@ -763,53 +770,50 @@ private void SetupDeviceLayout()
         return Mathf.Clamp((int)(screenSize.X / 10f), 24, 64);
     }
 
-   public void ResetGame()
-{
-    gameEnded = false;
-    draggedCircle = null;
-    currentPlayer = "Player1"; // Хост всегда начинает
-
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++)
-            board[i, j] = "";
-
-    ClearCirclesFrom(player1Table.GetChildren());
-    ClearCirclesFrom(player2Table.GetChildren());
-    ClearCirclesFrom(GetChildren());
-
-    CreateCircles(player1Table, "P1");
-    CreateCircles(player2Table, "P2");
-
-    // Пересчитываем расположение столов и меток
-    SetupDeviceLayout();
-
-    var global = GetNode<Global>("/root/Global");
-    if (multiplayerManager.IsHost())
+    public void ResetGame()
     {
-        player1Label.Text = global.PlayerNickname; // Ник хоста справа
-        player2Label.Text = global.OpponentNickname; // Ник клиента слева
-        SendMessage($"sync_current_player:{currentPlayer}");
-    }
-    else
-    {
-        player1Label.Text = global.PlayerNickname; // Ник клиента справа (после зеркалирования)
-        player2Label.Text = global.OpponentNickname; // Ник хоста слева (после зеркалирования)
+        gameEnded = false;
+        draggedCircle = null;
+        currentPlayer = "Player1";
+
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                board[i, j] = "";
+
+        ClearCirclesFrom(player1Table.GetChildren());
+        ClearCirclesFrom(player2Table.GetChildren());
+        ClearCirclesFrom(GetChildren());
+
+        CreateCircles(player1Table, "P1");
+        CreateCircles(player2Table, "P2");
+
+        SetupDeviceLayout();
+
+        var global = GetNode<Global>("/root/Global");
+        if (multiplayerManager.IsHost())
+        {
+            player1Label.Text = global.PlayerNickname;
+            player2Label.Text = global.OpponentNickname;
+            SendMessage($"sync_current_player:{currentPlayer}");
+        }
+        else
+        {
+            player1Label.Text = global.PlayerNickname;
+            player2Label.Text = global.OpponentNickname;
+        }
+
+        string currentNickname = currentPlayer == "Player1" ? 
+            (multiplayerManager.IsHost() ? global.PlayerNickname : global.OpponentNickname) : 
+            (multiplayerManager.IsHost() ? global.OpponentNickname : global.PlayerNickname);
+        ui.UpdateStatus($"Ход {currentNickname}");
     }
 
-    string currentNickname = currentPlayer == "Player1" ? 
-        (multiplayerManager.IsHost() ? global.PlayerNickname : global.OpponentNickname) : 
-        (multiplayerManager.IsHost() ? global.OpponentNickname : global.PlayerNickname);
-    ui.UpdateStatus($"Ход {currentNickname}");
-}
-
-    // Добавляем метод SyncResetGame для мультиплеера
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
     public void SyncResetGame()
     {
         ResetGame();
     }
 
-    // Добавляем метод ClearCirclesFrom, который используется в ResetGame
     private void ClearCirclesFrom(Godot.Collections.Array<Godot.Node> children)
     {
         foreach (Node child in children)

@@ -23,6 +23,8 @@ public partial class SinglePlayerGame : Control
     private BotAI botAI;
     private int botDifficulty = 0;
     private TextureRect[] tiles;
+    // NEW: Add GameOverModal field
+    private GameOverModal gameOverModal;
 
     private static readonly int[,] WinningCombinations = new int[,]
     {
@@ -49,12 +51,24 @@ public partial class SinglePlayerGame : Control
         player2Table = GetNode<Control>("Player2TableContainer/Player2Table");
         player1Label = GetNode<Label>("Player1TableContainer/Player1Label");
         player2Label = GetNode<Label>("Player2TableContainer/Player2Label");
+        
         ui = GetNode<UI>("UI");
+        // NEW: Get the GameOverModal node
+        gameOverModal = GetNode<GameOverModal>("GameOverModal");
 
+        // NEW: Validate all nodes, including GameOverModal
         if (grid == null || player1Table == null || player2Table == null || 
-            player1Label == null || player2Label == null || ui == null)
+            player1Label == null || player2Label == null || ui == null || gameOverModal == null)
         {
             GD.PrintErr("Ошибка: Один из узлов не найден!");
+            return;
+        }
+
+        // NEW: Validate GameOverModal components
+        if (gameOverModal.ResultLabel == null || gameOverModal.InstructionLabel == null || 
+            gameOverModal.MenuButton == null || gameOverModal.RestartButton == null)
+        {
+            GD.PrintErr("Ошибка: Один из элементов GameOverModal не привязан!");
             return;
         }
 
@@ -75,6 +89,9 @@ public partial class SinglePlayerGame : Control
             player2Label.Text = global.PlayerNickname + "_friend";
             GD.Print($"Friend mode: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
         }
+
+        // NEW: Hide the GameOverModal initially
+        gameOverModal.Visible = false;
 
         // Создаём игровое поле
         CreateGameField();
@@ -111,6 +128,24 @@ public partial class SinglePlayerGame : Control
 
         ui.GetNode<Button>("RestartButton").Pressed += ui.OnRestartButtonPressed;
         ui.GetNode<Button>("BackToMenuButton").Pressed += ui.OnMenuButtonPressed;
+        // NEW: Connect GameOverModal button signals
+        gameOverModal.MenuButton.Pressed += OnMenuButtonPressed;
+        gameOverModal.RestartButton.Pressed += OnRestartButtonPressed;
+    }
+
+    // NEW: Handler for the Menu button in GameOverModal
+    private void OnMenuButtonPressed()
+    {
+        GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
+        QueueFree();
+    }
+
+    // NEW: Handler for the Restart button in GameOverModal
+    private void OnRestartButtonPressed()
+    {
+        gameOverModal.Visible = false; // Hide the modal after restarting
+        ResetGame();
+        
     }
 
     private void SetupDeviceLayout()
@@ -120,27 +155,23 @@ public partial class SinglePlayerGame : Control
 
         if (isMobile)
         {
-            // Портретный режим для смартфона (занимаемся позже)
             DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
             DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
             GD.Print("Mobile layout setup will be implemented later.");
         }
         else
         {
-            // Горизонтальный режим для ПК (16:9, 1280x720)
             DisplayServer.WindowSetSize(new Vector2I(1280, 720));
             DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
             screenSize = new Vector2(1280, 720);
             GD.Print($"Screen Size: {screenSize}");
 
-            // Grid по центру
             float gridSize = 500;
             grid.Position = new Vector2((screenSize.X - gridSize) / 2, 120);
             grid.Size = new Vector2(gridSize, gridSize);
             grid.Visible = true;
             GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
 
-            // Player1TableContainer справа
             var player1TableContainer = GetNode<Control>("Player1TableContainer");
             float player1TableWidth = (screenSize.X - gridSize) / 2 - 40;
             float player1TableHeight = gridSize;
@@ -148,18 +179,15 @@ public partial class SinglePlayerGame : Control
             player1TableContainer.Size = new Vector2(player1TableWidth, player1TableHeight);
             player1TableContainer.Visible = true;
 
-            // Player1Table занимает верхнюю часть контейнера
             player1Table.Position = new Vector2(0, 0);
             player1Table.Size = new Vector2(player1TableWidth, player1TableHeight - player1Label.Size.Y - 10);
             player1Table.Visible = true;
 
-            // Player1Label размещаем под Player1Table
             player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
             GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
             GD.Print($"Player1Table Position: {player1Table.Position}, Size: {player1Table.Size}");
             GD.Print($"Player1Label Position: {player1Label.Position}, Size: {player1Label.Size}");
 
-            // Player2TableContainer слева
             var player2TableContainer = GetNode<Control>("Player2TableContainer");
             float player2TableWidth = (screenSize.X - gridSize) / 2 - 40;
             float player2TableHeight = gridSize;
@@ -167,12 +195,10 @@ public partial class SinglePlayerGame : Control
             player2TableContainer.Size = new Vector2(player2TableWidth, player2TableHeight);
             player2TableContainer.Visible = true;
 
-            // Player2Table занимает верхнюю часть контейнера
             player2Table.Position = new Vector2(0, 0);
             player2Table.Size = new Vector2(player2TableWidth, player2TableHeight - player2Label.Size.Y - 10);
             player2Table.Visible = true;
 
-            // Player2Label размещаем под Player2Table
             player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
             GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
             GD.Print($"Player2Table Position: {player2Table.Position}, Size: {player2Table.Size}");
@@ -390,7 +416,10 @@ public partial class SinglePlayerGame : Control
             gameEnded = true;
             string winnerNickname = winner == "Player1" ? global.PlayerNickname : 
                                    (gameMode == "bot" ? "Bot" : global.PlayerNickname + "_friend");
-            ui.UpdateStatus($"{winnerNickname} победил!");
+            // NEW: Show GameOverModal instead of updating UI status
+            gameOverModal.ResultLabel.Text = $"{winnerNickname} победил!";
+            gameOverModal.Visible = true;
+            ui.Visible = false;
             GD.Print($"{winnerNickname} wins!");
             return;
         }
@@ -398,7 +427,10 @@ public partial class SinglePlayerGame : Control
         if (IsBoardFull())
         {
             gameEnded = true;
-            ui.UpdateStatus("Ничья!");
+            // NEW: Show GameOverModal for a draw
+            gameOverModal.ResultLabel.Text = "Ничья!";
+            gameOverModal.Visible = true;
+            ui.Visible = false;
             GD.Print("Game ended in a draw!");
         }
     }
@@ -492,9 +524,10 @@ public partial class SinglePlayerGame : Control
         isBotThinking = false;
         draggedCircle = null;
         dragOffset = Vector2.Zero;
+        ui.Visible = false;
         var global = GetNode<Global>("/root/Global");
         ui.UpdateStatus($"Ход {global.PlayerNickname}");
-
+        
         GD.Print("Game reset with all circles recreated!");
     }
 
@@ -517,10 +550,9 @@ public partial class SinglePlayerGame : Control
         gridButtons = new Button[9];
         tiles = new TextureRect[9];
 
-        // Устанавливаем прозрачный стиль для GridContainer, чтобы убрать серый фон
         StyleBoxFlat gridStyle = new StyleBoxFlat
         {
-            BgColor = new Color(0, 0, 0, 0) // Прозрачный фон
+            BgColor = new Color(0, 0, 0, 0)
         };
         grid.AddThemeStyleboxOverride("panel", gridStyle);
         grid.Modulate = new Color(1, 1, 1, 1);
@@ -545,13 +577,8 @@ public partial class SinglePlayerGame : Control
             };
             button.AddThemeFontSizeOverride("font_size", CalculateFontSize());
 
-            // Создаём StyleBoxEmpty для состояния normal
             StyleBoxEmpty emptyStyle = new StyleBoxEmpty();
-
-            // Устанавливаем стиль только для состояния normal
             button.AddThemeStyleboxOverride("normal", emptyStyle);
-
-            // Делаем кнопку прозрачной
             button.Modulate = new Color(1, 1, 1, 1);
 
             if (tileTexture != null)
@@ -561,7 +588,7 @@ public partial class SinglePlayerGame : Control
                     Name = "Tile" + i,
                     Texture = tileTexture,
                     ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                    StretchMode = TextureRect.StretchModeEnum.KeepAspect, // Изменено
+                    StretchMode = TextureRect.StretchModeEnum.KeepAspect,
                     SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                     SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                     MouseFilter = Control.MouseFilterEnum.Ignore,
@@ -589,17 +616,6 @@ public partial class SinglePlayerGame : Control
             return;
         }
 
-        // Загружаем шейдер для круглой формы
-        /*Shader shader = GD.Load<Shader>("res://Shaders/circle_shape.gdshader");
-        if (shader == null)
-        {
-            GD.PrintErr($"Failed to load shader at res://Shaders/circle_shape.gdshader for {table.Name}");
-            return;
-        }
-
-        ShaderMaterial shaderMaterial = new ShaderMaterial();
-        shaderMaterial.Shader = shader;*/
-
         float tableWidth = table.Size.X;
         float tableHeight = table.Size.Y;
         GD.Print($"{table.Name} Width: {tableWidth}, Height: {tableHeight}");
@@ -618,12 +634,11 @@ public partial class SinglePlayerGame : Control
             baseSize = Mathf.Min(maxWidth, maxHeight);
         }
 
-        // Увеличиваем размеры кругляшков
         Vector2[] sizes = 
         {
-            new Vector2(baseSize * 0.7f, baseSize * 0.7f), // Small
-            new Vector2(baseSize * 0.85f, baseSize * 0.85f), // Medium
-            new Vector2(baseSize, baseSize) // Large
+            new Vector2(baseSize * 0.7f, baseSize * 0.7f),
+            new Vector2(baseSize * 0.85f, baseSize * 0.85f),
+            new Vector2(baseSize, baseSize)
         };
         string[] sizeNames = { "Small", "Medium", "Large" };
 
@@ -650,7 +665,6 @@ public partial class SinglePlayerGame : Control
                 StretchMode = TextureRect.StretchModeEnum.Scale,
                 Size = sizes[sizeIdx],
                 Position = new Vector2(leftCircleX, currentY),
-                //Material = shaderMaterial, // Применяем шейдер для круглой формы
                 MouseFilter = Control.MouseFilterEnum.Stop,
                 Visible = true
             };
@@ -667,7 +681,6 @@ public partial class SinglePlayerGame : Control
                 StretchMode = TextureRect.StretchModeEnum.Scale,
                 Size = sizes[sizeIdx],
                 Position = new Vector2(rightCircleX, currentY),
-                //Material = shaderMaterial.Duplicate() as ShaderMaterial, // Дублируем материал
                 MouseFilter = Control.MouseFilterEnum.Stop,
                 Visible = true
             };
