@@ -8,6 +8,8 @@ public partial class MultiplayerMenu : Control
     private Button backButton;
     private Label roomCodeLabel;
     private MultiplayerManager multiplayerManager;
+    private Timer searchTimeoutTimer; // Таймер для поиска комнаты
+    private bool isSearching; // Флаг, чтобы отслеживать состояние поиска
 
     public override void _Ready()
     {
@@ -20,11 +22,17 @@ public partial class MultiplayerMenu : Control
         backButton = GetNode<Button>("BackButton");
         multiplayerManager = GetNode<MultiplayerManager>("/root/MultiplayerManager");
 
+        // Создаем таймер для поиска комнаты
+        searchTimeoutTimer = new Timer();
+        searchTimeoutTimer.WaitTime = 5.0f; // 15 секунд
+        searchTimeoutTimer.OneShot = true;
+        AddChild(searchTimeoutTimer);
+        searchTimeoutTimer.Timeout += OnSearchTimeout;
+
         if (!ValidateNodes()) return;
 
         GD.Print("MultiplayerMenu: All nodes found");
 
-        // Отладка свойств кнопок
         GD.Print($"CreateRoomButton - Visible: {createRoomButton.Visible}, Disabled: {createRoomButton.Disabled}, MouseFilter: {createRoomButton.MouseFilter}");
         GD.Print($"JoinRoomButton - Visible: {joinRoomButton.Visible}, Disabled: {joinRoomButton.Disabled}, MouseFilter: {joinRoomButton.MouseFilter}");
         GD.Print($"BackButton - Visible: {backButton.Visible}, Disabled: {backButton.Disabled}, MouseFilter: {backButton.MouseFilter}");
@@ -71,6 +79,7 @@ public partial class MultiplayerMenu : Control
     {
         multiplayerManager.CreateRoom();
         roomCodeLabel.Text = "Создание комнаты...";
+        
         roomCodeLabel.Modulate = new Color(1, 1, 1);
     }
 
@@ -79,7 +88,12 @@ public partial class MultiplayerMenu : Control
         if (code.StartsWith("ERROR:"))
         {
             roomCodeLabel.Text = code;
-            roomCodeLabel.Modulate = new Color(1, 0, 0);
+            //roomCodeLabel.Modulate = new Color(1, 0, 0);
+            // Если ошибка при создании или подключении, сбрасываем состояние поиска
+            if (isSearching)
+            {
+                StopSearch("Ошибка подключения: " + code);
+            }
         }
         else
         {
@@ -94,7 +108,7 @@ public partial class MultiplayerMenu : Control
         if (string.IsNullOrEmpty(roomCode))
         {
             roomCodeInput.PlaceholderText = "Введите код!";
-            roomCodeInput.Modulate = new Color(1, 0, 0);
+            //roomCodeInput.Modulate = new Color(1, 0, 0);
             return;
         }
 
@@ -105,25 +119,68 @@ public partial class MultiplayerMenu : Control
             {
                 roomCodeInput.Text = "";
                 roomCodeInput.PlaceholderText = "Комната не создана!";
-                roomCodeInput.Modulate = new Color(1, 0, 0);
+                //roomCodeInput.Modulate = new Color(1, 0, 0);
                 return;
             }
             if (roomCode == currentRoomCode)
             {
                 roomCodeInput.Text = "";
                 roomCodeInput.PlaceholderText = "Это ваша комната!";
-                roomCodeInput.Modulate = new Color(1, 0, 0);
+                //roomCodeInput.Modulate = new Color(1, 0, 0);
                 return;
             }
         }
 
-        multiplayerManager.JoinRoom(roomCode);
+        // Начинаем поиск: меняем текст кнопки и отключаем её
+        isSearching = true;
+        joinRoomButton.Text = "Connection";
+        joinRoomButton.Disabled = true;
         roomCodeInput.PlaceholderText = "Подключение...";
         roomCodeInput.Modulate = new Color(1, 1, 1);
+
+        // Запускаем таймер поиска
+        searchTimeoutTimer.Start();
+        GD.Print("Search timeout timer started (15 seconds)");
+
+        // Пытаемся подключиться к комнате
+        multiplayerManager.JoinRoom(roomCode);
+    }
+
+    private void OnSearchTimeout()
+    {
+        GD.Print("Search timeout: 15 seconds elapsed, room not found");
+        StopSearch("Комната не найдена!");
+    }
+
+    private void StopSearch(string errorMessage)
+    {
+        if (!isSearching) return;
+
+        isSearching = false;
+        searchTimeoutTimer.Stop();
+        joinRoomButton.Text = "Join Room";
+        joinRoomButton.Disabled = false;
+        roomCodeInput.Text = "";
+        roomCodeInput.PlaceholderText = "Комната не найдена";
+        roomCodeInput.Modulate = new Color(1, 1, 1);
+        //roomCodeLabel.Text = errorMessage;
+
+        //roomCodeLabel.Modulate = new Color(1, 0, 0);
+
+        // Очищаем соединение
+        multiplayerManager.Cleanup();
+        GD.Print("Search stopped: " + errorMessage);
     }
 
     private void OnPlayerConnected()
     {
+        if (isSearching)
+        {
+            searchTimeoutTimer.Stop();
+            isSearching = false;
+            GD.Print("Search stopped due to successful connection");
+        }
+
         GD.Print("Player connected, closing MultiplayerMenu");
         var error = GetTree().ChangeSceneToFile("res://Scenes/Game.tscn");
         if (error != Error.Ok)
@@ -135,6 +192,11 @@ public partial class MultiplayerMenu : Control
 
     private void OnBackButtonPressed()
     {
+        if (isSearching)
+        {
+            StopSearch("Поиск отменен");
+        }
+
         multiplayerManager.Cleanup();
         var error = GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
         if (error != Error.Ok)
@@ -142,5 +204,15 @@ public partial class MultiplayerMenu : Control
             GD.PrintErr($"Не удалось загрузить сцену Menu.tscn: Ошибка {error}");
         }
         QueueFree();
+    }
+
+    public override void _ExitTree()
+    {
+        if (searchTimeoutTimer != null)
+        {
+            searchTimeoutTimer.Stop();
+            searchTimeoutTimer.QueueFree();
+            GD.Print("Search timeout timer cleaned up on exit");
+        }
     }
 }

@@ -113,6 +113,20 @@ text = "Player"
 placeholder_text = "Enter nickname"
 alignment = 1
 
+[node name="ToggleFullscreenButton" type="Button" parent="SettingsContainer"]
+visible = false
+custom_minimum_size = Vector2(350, 100)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_flfri")
+theme_override_font_sizes/font_size = 44
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
+text = "FulScreenMode"
+icon_alignment = 1
+
 [node name="BackButton" type="Button" parent="SettingsContainer"]
 custom_minimum_size = Vector2(350, 100)
 layout_mode = 2

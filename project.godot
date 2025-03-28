@@ -20,12 +20,12 @@ config/icon="res://Sprites/icon.svg"
 MultiplayerManager="*res://Scripts/MultiplayerManager.cs"
 Global="*res://Scripts/Global.cs"
 GlobalButtonHoverEffect="*res://Scripts/GlobalButtonHoverEffect.cs"
+DisplayManager="*res://Scripts/DisplayManager.cs"
 
 [display]
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
-window/size/initial_position_type=0
 window/stretch/mode="canvas_items"
 
 [dotnet]
