@@ -130,72 +130,75 @@ public partial class Game : Control
     }
 
     private void SetupDeviceLayout()
+{
+    bool isMobile = OS.GetName() == "Android" || OS.GetName() == "iOS";
+    Vector2 screenSize = GetViewport().GetVisibleRect().Size;
+
+    if (isMobile)
     {
-        bool isMobile = OS.GetName() == "Android" || OS.GetName() == "iOS";
-        Vector2 screenSize = GetViewport().GetVisibleRect().Size;
+        DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
+        DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
+        GD.Print("Mobile layout setup will be implemented later.");
+    }
+    else
+    {
+        // Изменяем разрешение с 1280x720 на 1920x1080
+        DisplayServer.WindowSetSize(new Vector2I(1920, 1080));
+        DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+        screenSize = new Vector2(1920, 1080);
+        GD.Print($"Screen Size: {screenSize}");
 
-        if (isMobile)
+        // Масштабируем размер сетки до 40% ширины экрана (768px для 1920px)
+        float gridSize = screenSize.X * 0.4f; // 768px для 1920px
+        grid.Position = new Vector2((screenSize.X - gridSize) / 2, screenSize.Y * 0.15f + 50); // Центрируем горизонтально, 15% от верха
+        grid.Size = new Vector2(gridSize, gridSize);
+        grid.Visible = true;
+        GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
+
+        var player1TableContainer = GetNode<Control>("Player1TableContainer");
+        // Масштабируем ширину таблицы до 25% ширины экрана (480px для 1920px)
+        float player1TableWidth = screenSize.X * 0.25f;
+        float player1TableHeight = gridSize;
+        player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + screenSize.X * 0.02f, grid.Position.Y);
+        player1TableContainer.Size = new Vector2(player1TableWidth, player1TableHeight);
+        player1TableContainer.Visible = true;
+
+        player1Table.Position = new Vector2(0, 0);
+        player1Table.Size = new Vector2(player1TableWidth, player1TableHeight - player1Label.Size.Y - 10);
+        player1Table.Visible = true;
+
+        player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y);
+        GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
+        GD.Print($"Player1Table Position: {player1Table.Position}, Size: {player1Table.Size}");
+        GD.Print($"Player1Label Position: {player1Label.Position}, Size: {player1Label.Size}");
+
+        var player2TableContainer = GetNode<Control>("Player2TableContainer");
+        float player2TableWidth = screenSize.X * 0.25f;
+        float player2TableHeight = gridSize;
+        player2TableContainer.Position = new Vector2(screenSize.X * 0.02f, grid.Position.Y);
+        player2TableContainer.Size = new Vector2(player2TableWidth, player2TableHeight);
+        player2TableContainer.Visible = true;
+
+        player2Table.Position = new Vector2(0, 0);
+        player2Table.Size = new Vector2(player2TableWidth, player2TableHeight - player2Label.Size.Y - 10);
+        player2Table.Visible = true;
+
+        player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y);
+        GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
+        GD.Print($"Player2Table Position: {player2Table.Position}, Size: {player2Table.Size}");
+        GD.Print($"Player2Label Position: {player2Label.Position}, Size: {player2Label.Size}");
+
+        if (!multiplayerManager.IsHost())
         {
-            DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
-            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
-            GD.Print("Mobile layout setup will be implemented later.");
-        }
-        else
-        {
-            DisplayServer.WindowSetSize(new Vector2I(1280, 720));
-            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
-            screenSize = new Vector2(1280, 720);
-            GD.Print($"Screen Size: {screenSize}");
+            (player1TableContainer.Position, player2TableContainer.Position) = (player2TableContainer.Position, player1TableContainer.Position);
+            UpdateCirclePositions(player1Table);
+            UpdateCirclePositions(player2Table);
 
-            float gridSize = 500;
-            grid.Position = new Vector2((screenSize.X - gridSize) / 2, 120);
-            grid.Size = new Vector2(gridSize, gridSize);
-            grid.Visible = true;
-            GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
-
-            var player1TableContainer = GetNode<Control>("Player1TableContainer");
-            float player1TableWidth = (screenSize.X - gridSize) / 2 - 40;
-            float player1TableHeight = gridSize;
-            player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + 20, 160);
-            player1TableContainer.Size = new Vector2(player1TableWidth, player1TableHeight);
-            player1TableContainer.Visible = true;
-
-            player1Table.Position = new Vector2(0, 0);
-            player1Table.Size = new Vector2(player1TableWidth, player1TableHeight - player1Label.Size.Y - 10);
-            player1Table.Visible = true;
-
-            player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
-            GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
-            GD.Print($"Player1Table Position: {player1Table.Position}, Size: {player1Table.Size}");
-            GD.Print($"Player1Label Position: {player1Label.Position}, Size: {player1Label.Size}");
-
-            var player2TableContainer = GetNode<Control>("Player2TableContainer");
-            float player2TableWidth = (screenSize.X - gridSize) / 2 - 40;
-            float player2TableHeight = gridSize;
-            player2TableContainer.Position = new Vector2(20, 160);
-            player2TableContainer.Size = new Vector2(player2TableWidth, player2TableHeight);
-            player2TableContainer.Visible = true;
-
-            player2Table.Position = new Vector2(0, 0);
-            player2Table.Size = new Vector2(player2TableWidth, player2TableHeight - player2Label.Size.Y - 10);
-            player2Table.Visible = true;
-
-            player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
-            GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
-            GD.Print($"Player2Table Position: {player2Table.Position}, Size: {player2Table.Size}");
-            GD.Print($"Player2Label Position: {player2Label.Position}, Size: {player2Label.Size}");
-
-            if (!multiplayerManager.IsHost())
-            {
-                (player1TableContainer.Position, player2TableContainer.Position) = (player2TableContainer.Position, player1TableContainer.Position);
-                UpdateCirclePositions(player1Table);
-                UpdateCirclePositions(player2Table);
-
-                player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
-                player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
-            }
+            player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y);
+            player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y);
         }
     }
+}
 
     private void CreateGameField()
     {
@@ -683,7 +686,8 @@ public partial class Game : Control
                 string winnerName = winner == "Player1" ? player1Label.Text : player2Label.Text;
                 gameOverModal.ResultLabel.Text = $"{winnerName} победил!";
                 gameOverModal.Visible = true;
-                ui.Visible = false;
+                ui.GetNode<Button>("RestartButton").Disabled = true;
+                ui.GetNode<Button>("BackToMenuButton").Disabled = true;
                 gameEnded = true;
                 SendMessage($"game_over:win:{winner}");
                 return;
@@ -704,7 +708,8 @@ public partial class Game : Control
             gameOverModal.ResultLabel.Text = "Ничья!";
             gameOverModal.Visible = true;
             gameEnded = true;
-            ui.Visible = false;
+            ui.GetNode<Button>("RestartButton").Disabled = true;
+            ui.GetNode<Button>("BackToMenuButton").Disabled = true;
             SendMessage("game_over:draw");
         }
     }
@@ -748,6 +753,7 @@ public partial class Game : Control
         {
             SendMessage($"restart_request:{global.PlayerNickname}");
             restartRequested = true;
+            gameOverModal.InstructionLabel.Text = $"Ожидание второго игрока...";
             //ui.UpdateStatus($"Ожидание второго игрока...");
         }
         else

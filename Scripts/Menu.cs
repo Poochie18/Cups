@@ -11,6 +11,8 @@ public partial class Menu : Control
 
     public override void _Ready()
     {
+        DisplayServer.WindowSetSize(new Vector2I(1920, 1080));
+        DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
         // Инициализация узлов
         mainMenuContainer = GetNode<VBoxContainer>("MainMenu");
         playVsFriendButton = GetNode<Button>("MainMenu/PlayVsFriendButton");

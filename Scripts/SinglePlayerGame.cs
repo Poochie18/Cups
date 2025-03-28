@@ -23,7 +23,6 @@ public partial class SinglePlayerGame : Control
     private BotAI botAI;
     private int botDifficulty = 0;
     private TextureRect[] tiles;
-    // NEW: Add GameOverModal field
     private GameOverModal gameOverModal;
 
     private static readonly int[,] WinningCombinations = new int[,]
@@ -51,12 +50,9 @@ public partial class SinglePlayerGame : Control
         player2Table = GetNode<Control>("Player2TableContainer/Player2Table");
         player1Label = GetNode<Label>("Player1TableContainer/Player1Label");
         player2Label = GetNode<Label>("Player2TableContainer/Player2Label");
-        
         ui = GetNode<UI>("UI");
-        // NEW: Get the GameOverModal node
         gameOverModal = GetNode<GameOverModal>("GameOverModal");
 
-        // NEW: Validate all nodes, including GameOverModal
         if (grid == null || player1Table == null || player2Table == null || 
             player1Label == null || player2Label == null || ui == null || gameOverModal == null)
         {
@@ -64,7 +60,6 @@ public partial class SinglePlayerGame : Control
             return;
         }
 
-        // NEW: Validate GameOverModal components
         if (gameOverModal.ResultLabel == null || gameOverModal.InstructionLabel == null || 
             gameOverModal.MenuButton == null || gameOverModal.RestartButton == null)
         {
@@ -90,10 +85,14 @@ public partial class SinglePlayerGame : Control
             GD.Print($"Friend mode: P1Label={player1Label.Text}, P2Label={player2Label.Text}");
         }
 
-        // NEW: Hide the GameOverModal initially
         gameOverModal.Visible = false;
 
-        // Создаём игровое поле
+        // NEW: Ensure buttons are enabled initially
+        var restartButton = ui.GetNode<Button>("RestartButton");
+        var backToMenuButton = ui.GetNode<Button>("BackToMenuButton");
+        restartButton.Disabled = false;
+        backToMenuButton.Disabled = false;
+
         CreateGameField();
 
         for (int i = 0; i < 3; i++)
@@ -102,7 +101,7 @@ public partial class SinglePlayerGame : Control
 
         SetupDeviceLayout();
 
-        // Обновляем размеры кнопок и тайлов
+        // MODIFIED: Adjust button and tile sizes based on the new grid size
         float buttonSize = grid.Size.X / 3;
         for (int i = 0; i < 9; i++)
         {
@@ -126,26 +125,22 @@ public partial class SinglePlayerGame : Control
         ui.UpdateStatus($"Ход {initialNickname}");
         GD.Print($"Initial status: Ход {initialNickname}");
 
-        ui.GetNode<Button>("RestartButton").Pressed += ui.OnRestartButtonPressed;
-        ui.GetNode<Button>("BackToMenuButton").Pressed += ui.OnMenuButtonPressed;
-        // NEW: Connect GameOverModal button signals
+        restartButton.Pressed += ui.OnRestartButtonPressed;
+        backToMenuButton.Pressed += ui.OnMenuButtonPressed;
         gameOverModal.MenuButton.Pressed += OnMenuButtonPressed;
         gameOverModal.RestartButton.Pressed += OnRestartButtonPressed;
     }
 
-    // NEW: Handler for the Menu button in GameOverModal
     private void OnMenuButtonPressed()
     {
         GetTree().ChangeSceneToFile("res://Scenes/Menu.tscn");
         QueueFree();
     }
 
-    // NEW: Handler for the Restart button in GameOverModal
     private void OnRestartButtonPressed()
     {
-        gameOverModal.Visible = false; // Hide the modal after restarting
+        gameOverModal.Visible = false;
         ResetGame();
-        
     }
 
     private void SetupDeviceLayout()
@@ -161,21 +156,23 @@ public partial class SinglePlayerGame : Control
         }
         else
         {
-            DisplayServer.WindowSetSize(new Vector2I(1280, 720));
+            DisplayServer.WindowSetSize(new Vector2I(1920, 1080));
             DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
-            screenSize = new Vector2(1280, 720);
+            screenSize = new Vector2(1920, 1080);
             GD.Print($"Screen Size: {screenSize}");
 
-            float gridSize = 500;
-            grid.Position = new Vector2((screenSize.X - gridSize) / 2, 120);
+            // MODIFIED: Scale the grid size to be 40% of the screen width (768px for 1920px width)
+            float gridSize = screenSize.X * 0.4f; // 768px for 1920px
+            grid.Position = new Vector2((screenSize.X - gridSize) / 2, screenSize.Y * 0.15f+50); // Centered horizontally, 15% from top
             grid.Size = new Vector2(gridSize, gridSize);
             grid.Visible = true;
             GD.Print($"Grid Position: {grid.Position}, Size: {grid.Size}");
 
             var player1TableContainer = GetNode<Control>("Player1TableContainer");
-            float player1TableWidth = (screenSize.X - gridSize) / 2 - 40;
+            // MODIFIED: Adjust table width to 25% of screen width (480px for 1920px)
+            float player1TableWidth = screenSize.X * 0.25f;
             float player1TableHeight = gridSize;
-            player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + 20, 160);
+            player1TableContainer.Position = new Vector2(grid.Position.X + gridSize + screenSize.X * 0.02f, grid.Position.Y+50);
             player1TableContainer.Size = new Vector2(player1TableWidth, player1TableHeight);
             player1TableContainer.Visible = true;
 
@@ -183,15 +180,15 @@ public partial class SinglePlayerGame : Control
             player1Table.Size = new Vector2(player1TableWidth, player1TableHeight - player1Label.Size.Y - 10);
             player1Table.Visible = true;
 
-            player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y + 10);
+            player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y-50);
             GD.Print($"Player1TableContainer Position: {player1TableContainer.Position}, Size: {player1TableContainer.Size}");
             GD.Print($"Player1Table Position: {player1Table.Position}, Size: {player1Table.Size}");
             GD.Print($"Player1Label Position: {player1Label.Position}, Size: {player1Label.Size}");
 
             var player2TableContainer = GetNode<Control>("Player2TableContainer");
-            float player2TableWidth = (screenSize.X - gridSize) / 2 - 40;
+            float player2TableWidth = screenSize.X * 0.25f;
             float player2TableHeight = gridSize;
-            player2TableContainer.Position = new Vector2(20, 160);
+            player2TableContainer.Position = new Vector2(screenSize.X * 0.02f, grid.Position.Y+50);
             player2TableContainer.Size = new Vector2(player2TableWidth, player2TableHeight);
             player2TableContainer.Visible = true;
 
@@ -199,10 +196,15 @@ public partial class SinglePlayerGame : Control
             player2Table.Size = new Vector2(player2TableWidth, player2TableHeight - player2Label.Size.Y - 10);
             player2Table.Visible = true;
 
-            player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y + 10);
+            player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y -50);
             GD.Print($"Player2TableContainer Position: {player2TableContainer.Position}, Size: {player2TableContainer.Size}");
             GD.Print($"Player2Table Position: {player2Table.Position}, Size: {player2Table.Size}");
             GD.Print($"Player2Label Position: {player2Label.Position}, Size: {player2Label.Size}");
+
+            // NEW: Adjust GameOverModal size and position
+            //gameOverModal.Position = new Vector2((screenSize.X - gameOverModal.Size.X) / 2, (screenSize.Y - gameOverModal.Size.Y) / 2);
+            //gameOverModal.Size = new Vector2(screenSize.X * 0.3f, screenSize.Y * 0.3f); // 30% of screen width and height
+            GD.Print($"GameOverModal Position: {gameOverModal.Position}, Size: {gameOverModal.Size}");
         }
     }
 
@@ -411,15 +413,18 @@ public partial class SinglePlayerGame : Control
     {
         var global = GetNode<Global>("/root/Global");
         string winner = CheckForWin();
+        var restartButton = ui.GetNode<Button>("RestartButton");
+        var backToMenuButton = ui.GetNode<Button>("BackToMenuButton");
+
         if (winner != null)
         {
             gameEnded = true;
             string winnerNickname = winner == "Player1" ? global.PlayerNickname : 
                                    (gameMode == "bot" ? "Bot" : global.PlayerNickname + "_friend");
-            // NEW: Show GameOverModal instead of updating UI status
             gameOverModal.ResultLabel.Text = $"{winnerNickname} победил!";
             gameOverModal.Visible = true;
-            ui.Visible = false;
+            restartButton.Disabled = true;
+            backToMenuButton.Disabled = true;
             GD.Print($"{winnerNickname} wins!");
             return;
         }
@@ -427,10 +432,10 @@ public partial class SinglePlayerGame : Control
         if (IsBoardFull())
         {
             gameEnded = true;
-            // NEW: Show GameOverModal for a draw
             gameOverModal.ResultLabel.Text = "Ничья!";
             gameOverModal.Visible = true;
-            ui.Visible = false;
+            restartButton.Disabled = true;
+            backToMenuButton.Disabled = true;
             GD.Print("Game ended in a draw!");
         }
     }
@@ -524,10 +529,13 @@ public partial class SinglePlayerGame : Control
         isBotThinking = false;
         draggedCircle = null;
         dragOffset = Vector2.Zero;
-        ui.Visible = false;
+        var restartButton = ui.GetNode<Button>("RestartButton");
+        var backToMenuButton = ui.GetNode<Button>("BackToMenuButton");
+        restartButton.Disabled = false;
+        backToMenuButton.Disabled = false;
         var global = GetNode<Global>("/root/Global");
         ui.UpdateStatus($"Ход {global.PlayerNickname}");
-        
+
         GD.Print("Game reset with all circles recreated!");
     }
 
@@ -629,8 +637,9 @@ public partial class SinglePlayerGame : Control
         }
         else
         {
-            float maxWidth = (tableWidth / 2) * 0.9f;
-            float maxHeight = (tableHeight / 3) * 0.9f;
+            // MODIFIED: Scale circle sizes based on table dimensions
+            float maxWidth = (tableWidth / 2) * 0.8f; // Reduced to 80% to fit better
+            float maxHeight = (tableHeight / 3) * 0.8f;
             baseSize = Mathf.Min(maxWidth, maxHeight);
         }
 
@@ -642,10 +651,11 @@ public partial class SinglePlayerGame : Control
         };
         string[] sizeNames = { "Small", "Medium", "Large" };
 
+        // MODIFIED: Adjust spacing to be proportional to table size
         float spacingX = (tableWidth - (sizes[0].X * 2)) / 3;
         float spacingY = (tableHeight - (sizes[0].Y + sizes[1].Y + sizes[2].Y)) / 4;
-        spacingX = Mathf.Min(spacingX, 10f);
-        spacingY = Mathf.Min(spacingY, 10f);
+        spacingX = Mathf.Min(spacingX, tableWidth * 0.05f); // Cap at 5% of table width
+        spacingY = Mathf.Min(spacingY, tableHeight * 0.05f); // Cap at 5% of table height
         if (spacingX < 2f) spacingX = 2f;
         if (spacingY < 2f) spacingY = 2f;
 
@@ -696,6 +706,7 @@ public partial class SinglePlayerGame : Control
     private int CalculateFontSize()
     {
         Vector2 screenSize = GetViewport().GetVisibleRect().Size;
-        return Mathf.Clamp((int)(screenSize.Y / 20f), 24, 64);
+        // MODIFIED: Adjust font size for 1920x1080 resolution
+        return Mathf.Clamp((int)(screenSize.Y / 30f), 24, 64); // Slightly smaller font size for better fit
     }
 }

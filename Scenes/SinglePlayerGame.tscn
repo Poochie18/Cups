@@ -18,7 +18,7 @@ expand_margin_right = 8.0
 shadow_size = 4
 shadow_offset = Vector2(2, 2)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_e75ny"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6pedr"]
 bg_color = Color(0.115599, 0.487753, 0.860815, 1)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
@@ -27,7 +27,7 @@ corner_radius_bottom_left = 8
 shadow_size = 8
 shadow_offset = Vector2(4, 4)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_c1kx5"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_syfuq"]
 bg_color = Color(0.0847176, 0.44017, 0.788368, 1)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
@@ -36,7 +36,7 @@ corner_radius_bottom_left = 8
 shadow_size = 8
 shadow_offset = Vector2(4, 4)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g43de"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s2c3o"]
 bg_color = Color(0.0980392, 0.462745, 0.823529, 1)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
@@ -45,14 +45,12 @@ corner_radius_bottom_left = 8
 shadow_size = 8
 shadow_offset = Vector2(4, 4)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g7sof"]
-bg_color = Color(0.0980392, 0.462745, 0.823529, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ma218"]
+bg_color = Color(0.113725, 0.486275, 0.862745, 1)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-expand_margin_left = 8.0
-expand_margin_right = 8.0
 shadow_size = 4
 shadow_offset = Vector2(2, 2)
 
@@ -163,68 +161,62 @@ script = ExtResource("1_rpswf")
 metadata/_edit_use_anchors_ = true
 
 [node name="RestartButton" type="Button" parent="UI"]
-custom_minimum_size = Vector2(25, 25)
+custom_minimum_size = Vector2(350, 100)
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.123438
-anchor_top = 0.0722222
-anchor_right = 0.123438
-anchor_bottom = 0.0722222
-offset_left = -8.0
-offset_top = -2.0
-offset_right = 92.0
-offset_bottom = 48.0
+offset_left = 100.0
+offset_top = 50.0
+offset_right = 450.0
+offset_bottom = 150.0
 size_flags_vertical = 4
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("3_a6lcg")
-theme_override_font_sizes/font_size = 28
-theme_override_styles/hover = SubResource("StyleBoxFlat_e75ny")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_c1kx5")
-theme_override_styles/normal = SubResource("StyleBoxFlat_g43de")
+theme_override_font_sizes/font_size = 44
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
 text = "Restart"
 icon_alignment = 1
 metadata/_edit_use_anchors_ = true
 
 [node name="BackToMenuButton" type="Button" parent="UI"]
-custom_minimum_size = Vector2(25, 25)
+custom_minimum_size = Vector2(350, 100)
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.123438
-anchor_top = 0.0722222
-anchor_right = 0.123438
-anchor_bottom = 0.0722222
-offset_left = 872.0
-offset_top = -2.0
-offset_right = 972.0
-offset_bottom = 48.0
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -450.0
+offset_top = 50.0
+offset_right = -100.0
+offset_bottom = 150.0
+grow_horizontal = 0
 size_flags_vertical = 4
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("3_a6lcg")
-theme_override_font_sizes/font_size = 28
-theme_override_styles/hover = SubResource("StyleBoxFlat_e75ny")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_c1kx5")
-theme_override_styles/normal = SubResource("StyleBoxFlat_g43de")
-text = "Home"
+theme_override_font_sizes/font_size = 44
+theme_override_styles/hover = SubResource("StyleBoxFlat_6pedr")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_syfuq")
+theme_override_styles/normal = SubResource("StyleBoxFlat_s2c3o")
+text = "Menu"
 icon_alignment = 1
 metadata/_edit_use_anchors_ = true
 
 [node name="StatusLabel" type="Label" parent="UI"]
-custom_minimum_size = Vector2(500, 75)
+custom_minimum_size = Vector2(500, 100)
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -175.0
-offset_top = 25.0
-offset_right = 175.0
-offset_bottom = 100.0
+offset_left = -300.0
+offset_top = 50.0
+offset_right = 300.0
+offset_bottom = 150.0
 grow_horizontal = 2
 theme_override_fonts/font = ExtResource("3_a6lcg")
-theme_override_font_sizes/font_size = 48
-theme_override_styles/normal = SubResource("StyleBoxFlat_g7sof")
+theme_override_font_sizes/font_size = 44
+theme_override_styles/normal = SubResource("StyleBoxFlat_ma218")
+text = "Multiplayer"
 horizontal_alignment = 1
 vertical_alignment = 1
-text_overrun_behavior = 1
 metadata/_edit_use_anchors_ = true
 
 [node name="GameOverModal" parent="." instance=ExtResource("4_e75ny")]

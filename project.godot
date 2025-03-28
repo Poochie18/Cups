@@ -23,10 +23,10 @@ GlobalButtonHoverEffect="*res://Scripts/GlobalButtonHoverEffect.cs"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/initial_position_type=0
 window/stretch/mode="canvas_items"
-window/handheld/orientation=5
 
 [dotnet]
 
