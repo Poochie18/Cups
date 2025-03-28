@@ -7,18 +7,17 @@ public partial class Global : Node
     public string PlayerNickname { get; set; } = "Player";
     public string OpponentNickname { get; set; } = "Opponent";
 
-    private const string ConfigPath = "user://settings.cfg"; // Путь к файлу настроек
+    private const string ConfigPath = "user://settings.cfg";
 
     public override void _Ready()
     {
-        LoadSettings(); // Загружаем настройки при старте
+        LoadSettings();
         if (OS.GetName() == "Android")
         {
-            // Устанавливаем размер окна в горизонтальной ориентации
             DisplayServer.WindowSetSize(new Vector2I(1280, 720));
-            GD.Print("Window size set to 1280x720 for Android (forcing landscape)");
+            //GD.Print("Window size set to 1280x720 for Android (forcing landscape)");
         }
-        GD.Print("Global script initialized");
+        //GD.Print("Global script initialized");
     }
 
     public void SaveSettings()
@@ -28,11 +27,11 @@ public partial class Global : Node
         Error err = config.Save(ConfigPath);
         if (err != Error.Ok)
         {
-            GD.PrintErr($"Ошибка сохранения настроек: {err}");
+            //GD.PrintErr($"Error saving settings: {err}");
         }
         else
         {
-            GD.Print($"Настройки сохранены: Nickname={PlayerNickname}");
+            //GD.Print($"Settings saved: Nickname={PlayerNickname}");
         }
     }
 
@@ -43,11 +42,11 @@ public partial class Global : Node
         if (err == Error.Ok)
         {
             PlayerNickname = config.GetValue("Player", "Nickname", "Player").AsString();
-            GD.Print($"Настройки загружены: Nickname={PlayerNickname}");
+            //GD.Print($"Settings loaded: Nickname={PlayerNickname}");
         }
         else if (err != Error.FileNotFound)
         {
-            GD.PrintErr($"Ошибка загрузки настроек: {err}");
+            //GD.PrintErr($"Error loading settings: {err}");
         }
     }
 }

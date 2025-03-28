@@ -14,8 +14,8 @@ public partial class UI : Control
 
         if (statusLabel == null || menuButton == null || restartButton == null)
         {
-            GD.PrintErr("Ошибка: Не найдены узлы UI!");
-            GD.Print($"statusLabel: {statusLabel}, menuButton: {menuButton}, restartButton: {restartButton}");
+            //GD.PrintErr("Error: UI nodes not found!");
+            //GD.Print($"statusLabel: {statusLabel}, menuButton: {menuButton}, restartButton: {restartButton}");
             return;
         }
     }
@@ -28,7 +28,7 @@ public partial class UI : Control
 
     public void OnMenuButtonPressed()
     {
-        GD.Print("Menu button pressed!");
+        //GD.Print("Menu button pressed!");
         foreach (Node node in GetTree().Root.GetChildren())
         {
             if (node is Menu)
@@ -46,19 +46,19 @@ public partial class UI : Control
         }
         else
         {
-            GD.PrintErr("Ошибка: Не удалось загрузить Menu.tscn!");
+            //GD.PrintErr("Error: Failed to load Menu.tscn!");
         }
     }
 
     public void OnRestartButtonPressed()
     {
-        GD.Print("Restart button pressed!");
+        //GD.Print("Restart button pressed!");
         if (GetParent() is Game game)
         {
             if (game.gameMode == "multiplayer")
             {
-                GD.Print("Calling SyncResetGame for multiplayer");
-                game.OnRestartButtonPressed(); // Вызываем метод OnRestartButtonPressed, который уже обрабатывает мультиплеер
+                //GD.Print("Calling SyncResetGame for multiplayer");
+                game.OnRestartButtonPressed();
             }
             else
             {
@@ -71,7 +71,7 @@ public partial class UI : Control
         }
         else
         {
-            GD.PrintErr("UI.OnRestartButtonPressed: Не удалось найти Game или SinglePlayerGame!");
+            //GD.PrintErr("UI.OnRestartButtonPressed: Failed to find Game or SinglePlayerGame!");
         }
     }
 }

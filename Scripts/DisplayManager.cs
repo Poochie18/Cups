@@ -24,19 +24,19 @@ public partial class DisplayManager : Node
             Vector2 screenSize = DisplayServer.ScreenGetSize();
             DisplayServer.WindowSetSize(new Vector2I((int)screenSize.X, (int)screenSize.Y));
             DisplayServer.WindowSetMode(DisplayServer.WindowMode.Maximized);
-            GD.Print("Настройка окна для мобильных устройств: Максимальный режим.");
+            //GD.Print("Window setup for mobile devices: Maximized mode.");
         }
         else
         {
             DisplayServer.WindowSetSize(defaultWindowSize);
-            GD.Print($"Устанавливаем режим окна: {defaultWindowMode}");
+            //GD.Print($"Setting window mode: {defaultWindowMode}");
             DisplayServer.WindowSetMode(defaultWindowMode);
             DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.Borderless, defaultBorderless);
             if (defaultWindowMode == DisplayServer.WindowMode.Windowed)
             {
                 CenterWindow();
             }
-            GD.Print($"Настройки окна применены: Размер={defaultWindowSize}, Режим={defaultWindowMode}, Без рамки={defaultBorderless}");
+            //GD.Print($"Window settings applied: Size={defaultWindowSize}, Mode={defaultWindowMode}, Borderless={defaultBorderless}");
         }
     }
 
@@ -45,7 +45,7 @@ public partial class DisplayManager : Node
         var screenSize = DisplayServer.ScreenGetSize();
         var windowPos = new Vector2I((screenSize.X - defaultWindowSize.X) / 2, (screenSize.Y - defaultWindowSize.Y) / 2);
         DisplayServer.WindowSetPosition(windowPos);
-        GD.Print($"Окно центрировано: Позиция={windowPos}");
+        //GD.Print($"Window centered: Position={windowPos}");
     }
 
     private void LoadSettings()
@@ -54,7 +54,7 @@ public partial class DisplayManager : Node
         Error error = configFile.Load(SettingsPath);
         if (error != Error.Ok)
         {
-            GD.Print($"Не удалось загрузить настройки: {error}. Используются значения по умолчанию.");
+            //GD.Print($"Failed to load settings: {error}. Using default values.");
             return;
         }
 
@@ -62,7 +62,7 @@ public partial class DisplayManager : Node
         defaultWindowMode = modeString == "Fullscreen" ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed;
         defaultBorderless = (bool)configFile.GetValue("Display", "Borderless", false);
 
-        GD.Print($"Настройки загружены: Режим={defaultWindowMode}, Без рамки={defaultBorderless}");
+        //GD.Print($"Settings loaded: Mode={defaultWindowMode}, Borderless={defaultBorderless}");
     }
 
     public void SaveSettings()
@@ -73,15 +73,15 @@ public partial class DisplayManager : Node
         configFile.SetValue("Display", "WindowMode", modeString);
         configFile.SetValue("Display", "Borderless", defaultBorderless);
 
-        GD.Print($"Сохраняем настройки: WindowMode={modeString}, Borderless={defaultBorderless}");
+        //GD.Print($"Saving settings: WindowMode={modeString}, Borderless={defaultBorderless}");
         Error error = configFile.Save(SettingsPath);
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Ошибка при сохранении настроек: {error}");
+            //GD.PrintErr($"Error saving settings: {error}");
         }
         else
         {
-            GD.Print("Настройки сохранены успешно.");
+            //GD.Print("Settings saved successfully.");
         }
     }
 
@@ -93,12 +93,12 @@ public partial class DisplayManager : Node
         {
             CenterWindow();
         }
-        GD.Print($"Размер окна изменен: {newSize}");
+        //GD.Print($"Window size changed: {newSize}");
     }
 
     public void SetWindowMode(DisplayServer.WindowMode mode)
     {
-        GD.Print($"SetWindowMode вызван: Новый режим={mode}, Текущий режим={defaultWindowMode}");
+        //GD.Print($"SetWindowMode called: New mode={mode}, Current mode={defaultWindowMode}");
         defaultWindowMode = mode;
         DisplayServer.WindowSetMode(mode);
         if (mode == DisplayServer.WindowMode.Windowed)
@@ -106,13 +106,13 @@ public partial class DisplayManager : Node
             CenterWindow();
         }
         SaveSettings();
-        GD.Print($"Режим окна изменен: {mode}");
-        // Дополнительная проверка: убедимся, что режим применился
+        //GD.Print($"Window mode changed: {mode}");
+        // Additional check: ensure the mode was applied
         var actualMode = DisplayServer.WindowGetMode();
-        GD.Print($"Фактический режим окна после изменения: {actualMode}");
+        //GD.Print($"Actual window mode after change: {actualMode}");
         if (actualMode != mode)
         {
-            GD.PrintErr($"Ошибка: Режим окна не изменился! Ожидалось: {mode}, Фактически: {actualMode}");
+            //GD.PrintErr($"Error: Window mode did not change! Expected: {mode}, Actual: {actualMode}");
         }
     }
 
@@ -121,7 +121,7 @@ public partial class DisplayManager : Node
         defaultBorderless = borderless;
         DisplayServer.WindowSetFlag(DisplayServer.WindowFlags.Borderless, borderless);
         SaveSettings();
-        GD.Print($"Настройка рамки изменена: Без рамки={borderless}");
+        //GD.Print($"Border setting changed: Borderless={borderless}");
     }
 
     public Vector2I GetWindowSize()
@@ -131,7 +131,7 @@ public partial class DisplayManager : Node
 
     public DisplayServer.WindowMode GetWindowMode()
     {
-        GD.Print($"GetWindowMode вызван: Возвращаем режим={defaultWindowMode}");
+        //GD.Print($"GetWindowMode called: Returning mode={defaultWindowMode}");
         return defaultWindowMode;
     }
 

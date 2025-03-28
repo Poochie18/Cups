@@ -9,9 +9,9 @@ public partial class GlobalButtonHoverEffect : Node
 
     public override void _Ready()
     {
-        GD.Print("GlobalButtonHoverEffect: Loaded and searching for buttons");
+        //GD.Print("GlobalButtonHoverEffect: Loaded and searching for buttons");
         FindButtons(GetTree().Root);
-        GD.Print($"GlobalButtonHoverEffect: Found {buttons.Count} buttons initially");
+        //GD.Print($"GlobalButtonHoverEffect: Found {buttons.Count} buttons initially");
         GetTree().NodeAdded += OnNodeAdded;
     }
 
@@ -19,7 +19,7 @@ public partial class GlobalButtonHoverEffect : Node
     {
         if (node is Button button)
         {
-            GD.Print($"GlobalButtonHoverEffect: Found button {button.Name} at path {button.GetPath()}");
+            //GD.Print($"GlobalButtonHoverEffect: Found button {button.Name} at path {button.GetPath()}");
             AddHoverEffect(button);
             buttons.Add(button);
         }
@@ -34,7 +34,7 @@ public partial class GlobalButtonHoverEffect : Node
     {
         if (node is Button button && !buttons.Contains(button))
         {
-            GD.Print($"GlobalButtonHoverEffect: New button added dynamically: {button.Name} at path {button.GetPath()}");
+            //GD.Print($"GlobalButtonHoverEffect: New button added dynamically: {button.Name} at path {button.GetPath()}");
             AddHoverEffect(button);
             buttons.Add(button);
         }
@@ -53,7 +53,7 @@ public partial class GlobalButtonHoverEffect : Node
 
         button.MouseEntered += () =>
         {
-            GD.Print($"Mouse entered on button: {button.Name}");
+            //GD.Print($"Mouse entered on button: {button.Name}");
             Tween tween = button.CreateTween();
             tween.TweenProperty(button, "scale", originalScale * ScaleIncrease, AnimationDuration)
                  .SetTrans(Tween.TransitionType.Sine)
@@ -62,7 +62,7 @@ public partial class GlobalButtonHoverEffect : Node
 
         button.MouseExited += () =>
         {
-            GD.Print($"Mouse exited on button: {button.Name}");
+            //GD.Print($"Mouse exited on button: {button.Name}");
             Tween tween = button.CreateTween();
             tween.TweenProperty(button, "scale", originalScale, AnimationDuration)
                  .SetTrans(Tween.TransitionType.Sine)

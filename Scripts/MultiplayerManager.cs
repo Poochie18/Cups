@@ -4,7 +4,7 @@ using System;
 public partial class MultiplayerManager : Node
 {
     private WebSocketPeer wsPeer;
-    private const string ServerBaseUrl = "wss://tic-tac-toe-server-new.onrender.com"; // Убрали /create
+    private const string ServerBaseUrl = "wss://tic-tac-toe-server-new.onrender.com";
     private string currentRoomCode = "";
     private bool isHost = false;
 
@@ -20,7 +20,7 @@ public partial class MultiplayerManager : Node
     public override void _Ready()
     {
         wsPeer = new WebSocketPeer();
-        GD.Print("MultiplayerManager initialized with WebSocketPeer");
+        //GD.Print("MultiplayerManager initialized with WebSocketPeer");
     }
 
     public void CreateRoom()
@@ -28,7 +28,7 @@ public partial class MultiplayerManager : Node
         if (wsPeer != null && wsPeer.GetReadyState() != WebSocketPeer.State.Closed)
         {
             wsPeer.Close();
-            GD.Print("Previous peer cleared before creating new room");
+            //GD.Print("Previous peer cleared before creating new room");
         }
 
         wsPeer = new WebSocketPeer();
@@ -36,14 +36,14 @@ public partial class MultiplayerManager : Node
         Error error = wsPeer.ConnectToUrl(url);
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Failed to connect to {url}: Error {error}");
+            //GD.PrintErr($"Failed to connect to {url}: Error {error}");
             EmitSignal(SignalName.RoomCreated, "ERROR: Failed to connect");
             return;
         }
 
         isHost = true;
-        currentRoomCode = ""; // Сбрасываем код комнаты до получения нового
-        GD.Print($"Connecting to server to create room at {url}");
+        currentRoomCode = "";
+        //GD.Print($"Connecting to server to create room at {url}");
     }
 
     public void JoinRoom(string code)
@@ -51,7 +51,7 @@ public partial class MultiplayerManager : Node
         if (wsPeer != null && wsPeer.GetReadyState() != WebSocketPeer.State.Closed)
         {
             wsPeer.Close();
-            GD.Print("Previous peer cleared before joining room");
+            //GD.Print("Previous peer cleared before joining room");
         }
 
         wsPeer = new WebSocketPeer();
@@ -60,13 +60,13 @@ public partial class MultiplayerManager : Node
         Error error = wsPeer.ConnectToUrl(url);
         if (error != Error.Ok)
         {
-            GD.PrintErr($"Failed to connect to {url}: Error {error}");
+            //GD.PrintErr($"Failed to connect to {url}: Error {error}");
             EmitSignal(SignalName.RoomCreated, "ERROR: Failed to connect");
             return;
         }
 
         isHost = false;
-        GD.Print($"Connecting to room {code} via {url}");
+        //GD.Print($"Connecting to room {code} via {url}");
     }
 
     public void SendMessage(string message)
@@ -74,11 +74,11 @@ public partial class MultiplayerManager : Node
         if (wsPeer != null && wsPeer.GetReadyState() == WebSocketPeer.State.Open)
         {
             wsPeer.SendText(message);
-            GD.Print($"Sent message: {message}");
+            //GD.Print($"Sent message: {message}");
         }
         else
         {
-            GD.PrintErr("WebSocket not connected, cannot send message");
+            //GD.PrintErr("WebSocket not connected, cannot send message");
         }
     }
 
@@ -88,7 +88,7 @@ public partial class MultiplayerManager : Node
         {
             wsPeer.Close();
             wsPeer = new WebSocketPeer();
-            GD.Print("Network peer cleaned up on menu return");
+            //GD.Print("Network peer cleaned up on menu return");
         }
         currentRoomCode = "";
         isHost = false;
@@ -108,7 +108,7 @@ public partial class MultiplayerManager : Node
                 if (packet != null && !packet.IsEmpty())
                 {
                     string message = packet.GetStringFromUtf8();
-                    GD.Print($"MultiplayerManager received: {message}");
+                    //GD.Print($"MultiplayerManager received: {message}");
 
                     if (message.StartsWith("{") && message.EndsWith("}"))
                     {
@@ -136,20 +136,20 @@ public partial class MultiplayerManager : Node
                                     else if (type == "error")
                                     {
                                         string errorMessage = data.ContainsKey("message") ? data["message"].AsString() : "Unknown error";
-                                        GD.PrintErr($"Server error: {errorMessage}");
+                                        //GD.PrintErr($"Server error: {errorMessage}");
                                         EmitSignal(SignalName.RoomCreated, $"ERROR: {errorMessage}");
                                     }
                                 }
                             }
                             else
                             {
-                                GD.Print($"Received JSON but not a dictionary: {message}");
+                                //GD.Print($"Received JSON but not a dictionary: {message}");
                                 EmitSignal(SignalName.MessageReceived, message);
                             }
                         }
                         else
                         {
-                            GD.PrintErr($"Failed to parse JSON: {parseResult} for message: {message}");
+                            //GD.PrintErr($"Failed to parse JSON: {parseResult} for message: {message}");
                             EmitSignal(SignalName.MessageReceived, message);
                         }
                     }
@@ -173,7 +173,7 @@ public partial class MultiplayerManager : Node
         if (wsPeer != null && wsPeer.GetReadyState() != WebSocketPeer.State.Closed)
         {
             wsPeer.Close();
-            GD.Print("Network peer closed on exit");
+            //GD.Print("Network peer closed on exit");
         }
     }
 

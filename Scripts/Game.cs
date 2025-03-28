@@ -79,7 +79,7 @@ public partial class Game : Control
             currentPlayer = "Player1";
             player1Label.Text = global.PlayerNickname;
             player2Label.Text = global.OpponentNickname;
-            ui.UpdateStatus($"Ход {global.PlayerNickname}");
+            ui.UpdateStatus($"{global.PlayerNickname}'s turn");
             SendMessage($"sync_labels:{global.PlayerNickname}");
             SendMessage($"sync_current_player:{currentPlayer}");
         }
@@ -88,7 +88,7 @@ public partial class Game : Control
             currentPlayer = "Player1";
             player1Label.Text = global.PlayerNickname;
             player2Label.Text = global.OpponentNickname;
-            ui.UpdateStatus($"Ход {global.OpponentNickname}");
+            ui.UpdateStatus($"{global.OpponentNickname}'s turn");
             SendMessage($"sync_labels:{global.PlayerNickname}");
         }
 
@@ -116,14 +116,14 @@ public partial class Game : Control
             player1Label == null || player2Label == null || ui == null || 
             backToMenuButton == null || restartButton == null || multiplayerManager == null || gameOverModal == null)
         {
-            GD.PrintErr("Ошибка: Один из узлов не найден!");
+            //GD.PrintErr("Ошибка: Один из узлов не найден!");
             return false;
         }
 
         if (gameOverModal.ResultLabel == null || gameOverModal.InstructionLabel == null || 
             gameOverModal.MenuButton == null || gameOverModal.RestartButton == null)
         {
-            GD.PrintErr("Ошибка: Один из элементов GameOverModal не привязан!");
+            //GD.PrintErr("Ошибка: Один из элементов GameOverModal не привязан!");
             return false;
         }
         return true;
@@ -140,7 +140,7 @@ public partial class Game : Control
     grid.Position = new Vector2((screenSize.X - gridSize) / 2, screenSize.Y * 0.15f + 50); // Центрируем по горизонтали, 15% от верха
     grid.Size = new Vector2(gridSize, gridSize);
     grid.Visible = true;
-    GD.Print($"Позиция сетки: {grid.Position}, Размер: {grid.Size}");
+    //GD.Print($"Позиция сетки: {grid.Position}, Размер: {grid.Size}");
 
     var player1TableContainer = GetNode<Control>("Player1TableContainer");
     float player1TableWidth = screenSize.X * 0.25f;
@@ -154,9 +154,9 @@ public partial class Game : Control
     player1Table.Visible = true;
 
     player1Label.Position = new Vector2((player1TableWidth - player1Label.Size.X) / 2, player1Table.Size.Y);
-    GD.Print($"Позиция Player1TableContainer: {player1TableContainer.Position}, Размер: {player1TableContainer.Size}");
-    GD.Print($"Позиция Player1Table: {player1Table.Position}, Размер: {player1Table.Size}");
-    GD.Print($"Позиция Player1Label: {player1Label.Position}, Размер: {player1Label.Size}");
+    //GD.Print($"Позиция Player1TableContainer: {player1TableContainer.Position}, Размер: {player1TableContainer.Size}");
+    //GD.Print($"Позиция Player1Table: {player1Table.Position}, Размер: {player1Table.Size}");
+    //GD.Print($"Позиция Player1Label: {player1Label.Position}, Размер: {player1Label.Size}");
 
     var player2TableContainer = GetNode<Control>("Player2TableContainer");
     float player2TableWidth = screenSize.X * 0.25f;
@@ -170,9 +170,9 @@ public partial class Game : Control
     player2Table.Visible = true;
 
     player2Label.Position = new Vector2((player2TableWidth - player2Label.Size.X) / 2, player2Table.Size.Y );
-    GD.Print($"Позиция Player2TableContainer: {player2TableContainer.Position}, Размер: {player2TableContainer.Size}");
-    GD.Print($"Позиция Player2Table: {player2Table.Position}, Размер: {player2Table.Size}");
-    GD.Print($"Позиция Player2Label: {player2Label.Position}, Размер: {player2Label.Size}");
+    //GD.Print($"Позиция Player2TableContainer: {player2TableContainer.Position}, Размер: {player2TableContainer.Size}");
+    //GD.Print($"Позиция Player2Table: {player2Table.Position}, Размер: {player2Table.Size}");
+    //GD.Print($"Позиция Player2Label: {player2Label.Position}, Размер: {player2Label.Size}");
 
     // Настраиваем размер и позицию GameOverModal
     //gameOverModal.Position = new Vector2((screenSize.X - gameOverModal.Size.X) / 2, (screenSize.Y - gameOverModal.Size.Y) / 2);
@@ -199,7 +199,7 @@ public partial class Game : Control
         grid.Modulate = new Color(1, 1, 1, 1);
 
         Texture2D tileTexture = GD.Load<Texture2D>("res://Sprites/grass_tile_no_bg.png");
-        if (tileTexture == null) GD.PrintErr("Не удалось загрузить текстуру: res://Sprites/grass_tile_no_bg.png");
+        //if (tileTexture == null) GD.PrintErr("Не удалось загрузить текстуру: res://Sprites/grass_tile_no_bg.png");
 
         for (int i = 0; i < 9; i++)
         {
@@ -244,7 +244,7 @@ public partial class Game : Control
         Texture2D texture = GD.Load<Texture2D>(texturePath);
         if (texture == null)
         {
-            GD.PrintErr($"Не удалось загрузить текстуру: {texturePath}");
+            //GD.PrintErr($"Не удалось загрузить текстуру: {texturePath}");
             return;
         }
 
@@ -399,13 +399,13 @@ public partial class Game : Control
                 {
                     string winner = parts[2];
                     string winnerName = winner == "Player1" ? player1Label.Text : player2Label.Text;
-                    gameOverModal.ResultLabel.Text = $"{winnerName} победил!";
+                    gameOverModal.ResultLabel.Text = $"{winnerName} wins!";
                     gameOverModal.Visible = true;
                     gameEnded = true;
                 }
                 else if (result == "draw")
                 {
-                    gameOverModal.ResultLabel.Text = "Ничья!";
+                    gameOverModal.ResultLabel.Text = "Draw!";
                     gameOverModal.Visible = true;
                     gameEnded = true;
                 }
@@ -414,7 +414,7 @@ public partial class Game : Control
             case "restart_request":
                 if (parts.Length != 2) return;
                 restartRequested = true;
-                gameOverModal.InstructionLabel.Text = $"Игрок {parts[1]} ожидает";
+                gameOverModal.InstructionLabel.Text = $"Player {parts[1]} is waiting";
                 //ui.UpdateStatus($"Игрок {parts[1]} ожидает");
                 gameOverModal.Visible = true;
                 break;
@@ -426,8 +426,8 @@ public partial class Game : Control
             case "player_left":
                 if (parts.Length != 2) return;
                 // MODIFIED: Update GameOverModal for the remaining player
-                gameOverModal.ResultLabel.Text = "Игра окончена";
-                gameOverModal.InstructionLabel.Text = $"Игрок {parts[1]} покинул игру";
+                gameOverModal.ResultLabel.Text = "Game Over";
+                gameOverModal.InstructionLabel.Text = $"Player {parts[1]} has left the game";
                 gameOverModal.RestartButton.Disabled = true; // Disable the Restart button
                 gameOverModal.Visible = true;
                 gameEnded = true;
@@ -584,7 +584,7 @@ public partial class Game : Control
                     string newPlayer = currentPlayer == "Player1" ? "Player2" : "Player1";
                     SendMessage($"move:{draggedCircle.Name}:{row}:{col}:{draggedCircle.Modulate.ToHtml()}:{draggedCircle.Size.X}:{draggedCircle.Size.Y}:{newPlayer}");
                     currentPlayer = newPlayer;
-                    ui.UpdateStatus($"Ход {(currentPlayer == "Player1" ? player1Label.Text : player2Label.Text)}");
+                    ui.UpdateStatus($"{(currentPlayer == "Player1" ? player1Label.Text : player2Label.Text)}'s turn");
                     CheckForWinOrDraw();
                 }
                 else
@@ -610,7 +610,7 @@ public partial class Game : Control
         string currentNickname = currentPlayer == "Player1" ? 
             (multiplayerManager.IsHost() ? global.PlayerNickname : global.OpponentNickname) : 
             (multiplayerManager.IsHost() ? global.OpponentNickname : global.PlayerNickname);
-        ui.UpdateStatus($"Ход {currentNickname}");
+        ui.UpdateStatus($"{currentNickname}'s turn");
     }
 
     private void UpdateHighlight(Vector2 mousePosition)
@@ -743,7 +743,7 @@ public partial class Game : Control
         {
             SendMessage($"restart_request:{global.PlayerNickname}");
             restartRequested = true;
-            gameOverModal.InstructionLabel.Text = $"Ожидание второго игрока...";
+            gameOverModal.InstructionLabel.Text = $"Waiting for the second player...";
             //ui.UpdateStatus($"Ожидание второго игрока...");
         }
         else
@@ -801,7 +801,7 @@ public partial class Game : Control
         string currentNickname = currentPlayer == "Player1" ? 
             (multiplayerManager.IsHost() ? global.PlayerNickname : global.OpponentNickname) : 
             (multiplayerManager.IsHost() ? global.OpponentNickname : global.PlayerNickname);
-        ui.UpdateStatus($"Ход {currentNickname}");
+        ui.UpdateStatus($"{currentNickname} turn");
     }
 
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true)]
